@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Secrets & state (NEVER commit)
+.env
+secrets/
+state.db
+.index/
+
+# OS
+.DS_Store

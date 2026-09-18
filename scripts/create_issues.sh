@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Bulk-create GitHub issues for Second Brain.
+# Prereq: `gh auth login` done, and run from inside the repo (after `git push`).
+set -euo pipefail
+
+echo 'Creating labels...'
+gh label create 'phase-0' --color 0e8a16 --force >/dev/null 2>&1 || true
+gh label create 'phase-1' --color 1d76db --force >/dev/null 2>&1 || true
+gh label create 'phase-2' --color 5319e7 --force >/dev/null 2>&1 || true
+gh label create 'phase-3' --color b60205 --force >/dev/null 2>&1 || true
+gh label create 'phase-4' --color fbca04 --force >/dev/null 2>&1 || true
+gh label create 'phase-5' --color 006b75 --force >/dev/null 2>&1 || true
+gh label create 'type-feature' --color c2e0c6 --force >/dev/null 2>&1 || true
+
+echo 'Creating issues...'
+gh issue create --title "Set up project skeleton and config loading" --label "phase-0" --label "type-feature" --body "Bootstrap the package layout and environment-based config.\n- [ ] `.env` loading via python-dotenv\n- [ ] `Config.secret()` raises on missing keys\n- [ ] `Config.manifest` fail-closed module switches\n- [ ] `python -m second_brain.main` runs (even if it only logs)\n\nModule: `config.py`"
+gh issue create --title "Implement LLMClient.complete() (Claude wrapper)" --label "phase-0" --label "type-feature" --body "Thin wrapper over the Anthropic API.\n- [ ] `complete(prompt, tools)` returns text\n- [ ] tool-calling supported\n- [ ] key read from `ANTHROPIC_API_KEY`\n\nModule: `llm_client.py`"
+gh issue create --title "VaultRepository.write() with YAML frontmatter" --label "phase-0" --label "type-feature" --body "The single write path to the Obsidian vault (source of truth).\n- [ ] write Markdown + frontmatter (python-frontmatter)\n- [ ] `upsert_frontmatter()` updates fields in place\n- [ ] paths resolved under `VAULT_PATH`\n\nModule: `storage/vault_repository.py`"
+gh issue create --title "TelegramGateway: receive + send (single-user auth)" --label "phase-0" --label "type-feature" --body "Bidirectional channel; only the allowed chat id is served.\n- [ ] long-polling start()\n- [ ] `_on_message` rejects unknown chat ids\n- [ ] `send(chat_id, text)` works (used later by proactive)\n\nModule: `interface/telegram_gateway.py`"
+gh issue create --title "Orchestrator minimal path (message -> LLM -> note)" --label "phase-0" --label "type-feature" --body "Wire the shortest working flow end to end.\n- [ ] `handle(message)` calls LLM and replies\n- [ ] can invoke NoteWriter to save a note\n- [ ] smoke-tested via Telegram\n\nModule: `orchestration/orchestrator.py`"
+gh issue create --title "NoteWriter tool" --label "phase-0" --label "type-feature" --body "First Tool implementation; writes an atomic note.\n- [ ] implements `Tool.run(args)`\n- [ ] delegates to VaultRepository\n- [ ] returns the created note path\n\nModule: `tools/note_writer.py`"
+gh issue create --title "Router intent classification" --label "phase-1" --label "type-feature" --body "Classify incoming messages into `Intent` with a cheap model.\n- [ ] returns one of the `Intent` enum values\n- [ ] handles capture/query/journal/reminder\n\nModule: `orchestration/router.py`"
+gh issue create --title "LinkCapturer: fetch + summarize" --label "phase-1" --label "type-feature" --body "Fetch a URL, extract content, summarize via LLM.\n- [ ] fetch with httpx + parse with BeautifulSoup\n- [ ] LLM summary\n- [ ] graceful fallback when fetch fails (store raw link + note)\n\nModule: `tools/link_capturer.py`"
+gh issue create --title "Bookmark flow end-to-end" --label "phase-1" --label "type-feature" --body "UC2: URL + 'look later' -> tagged bookmark in vault.\n- [ ] frontmatter (url, summary, tags, created)\n- [ ] auto-tagging\n- [ ] added to index (stub ok until Phase 4)\n\nModule: `tools/note_writer.py`"
+gh issue create --title "StateDB (SQLite) schema + CRUD" --label "phase-2" --label "type-feature" --body "Operational state only (not user content).\n- [ ] tables: reminders, messages, jobs, last_nudge\n- [ ] `reminders_due()`, `save_message()`, `jobs()`\n\nModule: `storage/state_db.py`"
+gh issue create --title "CalendarTool: Google Calendar OAuth + read" --label "phase-2" --label "type-feature" --body "Read events to inform scheduling windows.\n- [ ] OAuth flow (google-auth-oauthlib)\n- [ ] list events for a day\n- [ ] enabled via `Config.manifest['calendar']`\n\nModule: `tools/calendar.py`"
+gh issue create --title "Deploy: always-on host + vault sync" --label "phase-2" --label "type-feature" --body "Run 24/7 on a VPS/Pi; sync vault to laptop.\n- [ ] Dockerfile / systemd unit\n- [ ] vault sync (Git or Syncthing) documented\n- [ ] secrets kept off the vault\n\nModule: `README.md`"
+gh issue create --title "Scheduler background loop (APScheduler)" --label "phase-3" --label "type-feature" --body "Periodic tick that drives proactive behavior.\n- [ ] tick() checks due reminders\n- [ ] runs inside the same async process\n\nModule: `proactive/scheduler.py`"
+gh issue create --title "Policy engine (quiet hours, rate limit, calendar-aware)" --label "phase-3" --label "type-feature" --body "Decide whether/when to nudge; conservative by default.\n- [ ] quiet hours from `QUIET_HOURS`\n- [ ] skip when calendar busy\n- [ ] rate limit per day\n- [ ] `next_window()`\n\nModule: `proactive/policy.py`"
+gh issue create --title "ReminderManager CRUD + lifecycle" --label "phase-3" --label "type-feature" --body "Reminder states: pending -> deferred -> sent -> closed.\n- [ ] create/list/close\n- [ ] persisted in StateDB\n\nModule: `tools/reminder_manager.py`"
+gh issue create --title "Proactive send path (scheduler -> policy -> gateway)" --label "phase-3" --label "type-feature" --body "UC7 wired end to end.\n- [ ] due reminder -> policy check -> send\n- [ ] deferral when not appropriate\n\nModule: `proactive/scheduler.py`"
+gh issue create --title "IndexStore embeddings + Retriever" --label "phase-4" --label "type-feature" --body "Semantic recall over the vault (derived, rebuildable).\n- [ ] embed notes via LLMClient.embed\n- [ ] `search(query, k)`\n- [ ] Retriever tool wraps it\n\nModule: `storage/index_store.py`"
+gh issue create --title "ContextBuilder retrieval integration" --label "phase-4" --label "type-feature" --body "Feed related notes into the LLM context.\n- [ ] pull top-k related notes\n- [ ] token budget management\n\nModule: `orchestration/context_builder.py`"
+gh issue create --title "'Reminds you of' recall suggestion" --label "phase-4" --label "type-feature" --body "Surface older related notes during conversation.\n- [ ] detect topical overlap\n- [ ] cite the source note path\n\nModule: `orchestration/orchestrator.py`"
+gh issue create --title "JournalWriter + journal reminder job" --label "phase-5" --label "type-feature" --body "Append to today's journal; nudge if empty by evening.\n- [ ] `journal/YYYY-MM-DD.md` create/append\n- [ ] scheduler job checks emptiness\n- [ ] nudge routed through Policy\n\nModule: `tools/journal_writer.py`"
+gh issue create --title "JournalAnalyzer: fixed metric schema" --label "phase-5" --label "type-feature" --body "Extract mood/energy/productivity/stress (1-5) at end of day.\n- [ ] FIXED schema only (no invented metrics)\n- [ ] write to frontmatter as editable suggestions\n- [ ] re-embed the note\n\nModule: `tools/journal_analyzer.py`"
+gh issue create --title "State flags -> policy inputs" --label "phase-5" --label "type-feature" --body "User-reported energy/cycle/exam feed timing.\n- [ ] parse 'exam week' / 'low energy' etc.\n- [ ] stored as StateFlag in a vault note\n- [ ] Policy reads them\n\nModule: `models.py`"
+gh issue create --title "Descriptive trend reporting (no prediction)" --label "phase-5" --label "type-feature" --body "Backward-looking summaries only, on request.\n- [ ] weekly/monthly metric trends\n- [ ] explicitly avoid forecasting until enough data\n\nModule: `tools/journal_analyzer.py`"
+
+echo 'Done. See: gh issue list'

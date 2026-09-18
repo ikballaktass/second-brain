@@ -1,0 +1,13 @@
+[project]
+name = "second-brain"
+version = "0.1.0"
+description = "Proactive single-user personal AI assistant over an Obsidian vault."
+authors = [{ name = "İkbal Aktaş" }]
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
