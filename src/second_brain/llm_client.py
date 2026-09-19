@@ -1,7 +1,21 @@
 """Thin wrapper over the LLM (Claude) and embeddings (cross-cutting)."""
 from __future__ import annotations
+from dataclasses import dataclass, field
 import anthropic
 from .config import Config
+
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    input: dict
+
+
+@dataclass
+class LLMResult:
+    test: str
+    tool_calls: list[ToolCall] = field(default_factory=list)
 
 
 class LLMClient:
@@ -11,14 +25,26 @@ class LLMClient:
 
     def complete(self, prompt: str, tools: list | None = None) -> str:
         """Call the model, optionally with tool definitions (tool-calling)."""
+        kwargs = {}
+        if tools:
+            kwargs["tools"] = tools
+        
         response = self.client.messages.create(
             model=self.model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
+            **kwargs,
         )
-        return "".join(
+
+        text = "".join(
             block.text for block in response.content if block.type == "text"
         )
+        tool_calls = [
+            ToolCall(id=block.id, name=block.name, input=block.input)
+            for block in response.content
+            if block.type == "tool_use"
+        ]
+        return LLMResult(text=text, tool_calls=tool_calls)
 
     def embed(self, text: str) -> list[float]:
         """Return an embedding vector for semantic recall (Phase 4)."""
