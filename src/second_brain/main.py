@@ -13,6 +13,8 @@ from .orchestration.context_builder import ContextBuilder
 from .tools.note_writer import NoteWriter
 from .interface.telegram_gateway import TelegramGateway
 
+import logging
+
 
 def build() -> TelegramGateway:
     llm = LLMClient()
@@ -25,6 +27,10 @@ def build() -> TelegramGateway:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+    if not Config.get("TELEGRAM_BOT_TOKEN"):
+        logging.info("Config OK. TELEGRAM_BOT_TOKEN does not exist, cannot initialize Telegram (Phase 0 smoke test).")
+        return
     build().start()
 
 
