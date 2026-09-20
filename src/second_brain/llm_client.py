@@ -12,6 +12,10 @@ class ToolCall:
     input: dict
 
 
+class LLMError(Exception):
+    """Raised when the LLM call fails."""
+
+
 @dataclass
 class LLMResult:
     test: str
@@ -28,13 +32,22 @@ class LLMClient:
         kwargs = {}
         if tools:
             kwargs["tools"] = tools
-        
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-            **kwargs,
-        )
+
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
+                **kwargs,
+            )
+        except anthropic.AuthenticationError as e:
+            raise LLMError("Anthropic API key is invalid.") from e
+        except anthropic.RateLimitError as e:
+            raise LLMError("Rate limit hit; try again in a moment.") from e
+        except anthropic.APIConnectionError as e:
+            raise LLMError("Could not reach the Anthropic API (network problem?).") from e
+        except anthropic.APIStatusError as e:
+            raise LLMError(f"Anthropic API error ({e.status_code}): {e.message}") from e
 
         text = "".join(
             block.text for block in response.content if block.type == "text"
