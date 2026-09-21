@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from frontmatter import Post, dumps
+from frontmatter import Post, dumps, loads
 
 
 class VaultRepository:
@@ -13,7 +13,7 @@ class VaultRepository:
         self.root = Path(vault_path).expanduser().resolve()
     
     def _resolve(self, rel_path: str) -> Path:
-        full = (Self.root / rel_path).resolve()
+        full = (self.root / rel_path).resolve()
         if not full.is_relative_to(self.root):
             raise ValueError(f"Path {rel_path} is outside the vault root {self.root}.")
         return full
@@ -33,7 +33,16 @@ class VaultRepository:
         full.write_text(text, encoding="utf-8")
 
     def upsert_frontmatter(self, rel_path: str, fields: dict) -> None:
-        raise NotImplementedError
+        """Update or insert frontmatter fields in a note."""
+        full = self._resolve(rel_path)
+        if not full.is_file():
+            raise FileNotFoundError(f"File {rel_path} does not exist in the vault.")    
+        
+        post = loads(full.read_text(encoding="utf-8"))
+        post.metadata.update(fields)
+
+        text = dumps(post, sort_keys=False) + "\n"
+        full.write_text(text, encoding="utf-8")
 
     def list(self, subdir: str = "") -> list[str]:
         raise NotImplementedError
