@@ -10,5 +10,8 @@ secrets/
 state.db
 .index/
 
+# Tests
+tests/
+
 # OS
 .DS_Store

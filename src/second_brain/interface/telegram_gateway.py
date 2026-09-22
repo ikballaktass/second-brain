@@ -5,20 +5,49 @@ is served (single-user).
 """
 from __future__ import annotations
 
+from typing import Awaitable, Callable, Optional
+
+from telegram import Update
+from telegram.ext import Application, ContextTypes, MessageHandler as TgMessageHandler, filters
+
+MessageHandler = Callable[[int, str], Awaitable[None]]
 
 class TelegramGateway:
-    def __init__(self, orchestrator) -> None:
-        self.orchestrator = orchestrator
-        # TODO: build python-telegram-bot Application with the bot token
 
-    def start(self) -> None:
+    def __init__(
+        self,
+        bot_token: str,
+        allowed_chat_id: int,
+        message_handler: MessageHandler,
+        application: Optional[Application] = None,
+    ) -> None:
+        self.bot_token = bot_token
+        self.allowed_chat_id = allowed_chat_id
+        self.message_handler = message_handler
+
+        if application is not None:
+            self.application = application
+        else:
+            self.application = Application.builder().token(bot_token).build()
+    
+    async def start(self) -> None:
         """Start long-polling; register the message handler."""
-        raise NotImplementedError
+        self.application.add_handler(
+            TgMessageHandler(filters.ALL, self._on_update)
+        )
+        await self.application.run_polling()
 
-    def send(self, chat_id: str, text: str) -> None:
-        """Send a message (used by both replies and proactive nudges)."""
-        raise NotImplementedError
+    async def _on_update(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        
+        chat_id = update.effective_chat.id
+        text = update.effective_message.text
 
-    def _on_message(self, update) -> None:
-        """Auth-check the chat id, then hand off to the orchestrator."""
-        raise NotImplementedError
+        if chat_id != self.allowed_chat_id:
+            return
+
+        await self.message_handler(chat_id, text)
+
+    async def send_message(self, text: str) -> None:
+        await self.application.bot.send_message(
+            chat_id=self.allowed_chat_id, text=text
+        )
