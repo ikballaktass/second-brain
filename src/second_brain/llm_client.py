@@ -18,7 +18,7 @@ class LLMError(Exception):
 
 @dataclass
 class LLMResult:
-    test: str
+    text: str
     tool_calls: list[ToolCall] = field(default_factory=list)
 
 
@@ -27,11 +27,18 @@ class LLMClient:
         self.client = anthropic.Anthropic(api_key=Config.secret("ANTHROPIC_API_KEY"))
         self.model = Config.get("LLM_MODEL", "claude-haiku-4-5-20251001")
 
-    def complete(self, prompt: str, tools: list | None = None) -> str:
+    def complete(
+        self,
+        prompt: str, 
+        tools: list | None = None,
+        system: str | None = None
+        ) -> LLMResult:
         """Call the model, optionally with tool definitions (tool-calling)."""
         kwargs = {}
         if tools:
             kwargs["tools"] = tools
+        if system:
+            kwargs["system"] = system
 
         try:
             response = self.client.messages.create(

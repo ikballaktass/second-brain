@@ -10,6 +10,10 @@ from typing import Awaitable, Callable, Optional
 from telegram import Update
 from telegram.ext import Application, ContextTypes, MessageHandler as TgMessageHandler, filters
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 MessageHandler = Callable[[int, str], Awaitable[None]]
 
 class TelegramGateway:
@@ -30,19 +34,20 @@ class TelegramGateway:
         else:
             self.application = Application.builder().token(bot_token).build()
     
-    async def start(self) -> None:
-        """Start long-polling; register the message handler."""
+    def start(self) -> None:
+        """Register the message handler and start long-polling (blocks)."""
         self.application.add_handler(
-            TgMessageHandler(filters.ALL, self._on_update)
+            TgMessageHandler(filters.TEXT & ~filters.COMMAND, self._on_update)
         )
-        await self.application.run_polling()
+        self.application.run_polling()
 
     async def _on_update(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        
+        """Auth-check the chat id, then hand the text to the message handler."""
         chat_id = update.effective_chat.id
         text = update.effective_message.text
 
         if chat_id != self.allowed_chat_id:
+            logger.warning("Ignored message from unauthorized chat %s", chat_id)
             return
 
         await self.message_handler(chat_id, text)
