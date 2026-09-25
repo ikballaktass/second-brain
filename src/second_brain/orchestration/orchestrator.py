@@ -51,6 +51,10 @@ class Orchestrator:
         
         try:
             return self.tools[name].run(args)
+
+        except ValueError as err:
+            return f"Could not run {name}: {err}"
+            
         except Exception:
             logger.exception("Tool %s raised an exception", name)
             return f"Tool {name} failed to run."

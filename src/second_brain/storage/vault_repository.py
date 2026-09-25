@@ -46,3 +46,7 @@ class VaultRepository:
 
     def list(self, subdir: str = "") -> list[str]:
         raise NotImplementedError
+
+    def exists(self, rel_path: str) -> bool:
+        """True if a note already exists at rel_path."""
+        return self._resolve(rel_path).is_file()
