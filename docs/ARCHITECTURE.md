@@ -65,6 +65,10 @@ scheduler.tick()  (every N seconds, inside the same async process)
         → if YES → orchestrator composes the message → telegram_gateway.send(...)
 ```
 
+End-of-day metrics come from `tools/journal_analyzer.py` (job `analyze`, 04:30 daily and at
+startup; silent — it sends nothing, so it does not go through Policy). It writes through
+`JournalWriter.annotate`, keeping the vault at two writers.
+
 The empty-journal check is `orchestration/journal_nudger.py` (job `journal_check`, every 30
 minutes after `JOURNAL_CHECK_TIME`, at most once a day, `kind="nudge"`).
 
