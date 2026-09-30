@@ -12,6 +12,7 @@ from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.orchestrator import Orchestrator
 from .orchestration.router import Router
+from .proactive.scheduler import DEFAULT_INTERVAL_S, Scheduler
 from .storage.index_store import IndexStore
 from .storage.state_db import StateDB
 from .storage.vault_repository import VaultRepository
@@ -32,9 +33,13 @@ def build() -> TelegramGateway:
     note_writer = NoteWriter(vault=vault, index=index)
     tools = [note_writer, LinkCapturer(llm=llm, note_writer=note_writer)]
     # Fail-closed: reminders are only offered once something can actually send them.
+    scheduler = None
     if Config.enabled("proactive"):
         state = StateDB(Config.get("STATE_DB_PATH", "state.db"))
         tools.append(ReminderManager(state=state))
+        interval = float(Config.get("SCHEDULER_INTERVAL_S", str(DEFAULT_INTERVAL_S)))
+        # on_due (policy check + send) is wired in #16.
+        scheduler = Scheduler(state=state, interval_s=interval)
     orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
 
     async def on_message(chat_id: int, text: str) -> None:
@@ -49,8 +54,18 @@ def build() -> TelegramGateway:
         bot_token=Config.secret("TELEGRAM_BOT_TOKEN"),
         allowed_chat_id=int(Config.secret("TELEGRAM_ALLOWED_CHAT_ID")),
         message_handler=on_message,
+        on_startup=_async(scheduler.start) if scheduler else None,
+        on_shutdown=_async(scheduler.shutdown) if scheduler else None,
     )
     return gateway
+
+
+def _async(func):
+    """Wrap a sync callable as a no-arg coroutine function for gateway hooks."""
+    async def hook() -> None:
+        func()
+
+    return hook
 
 
 def main() -> None:

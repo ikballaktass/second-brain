@@ -34,6 +34,7 @@ never go in the vault or in git** — `.env` is gitignored.
 | `QUIET_HOURS` | e.g. `23:00-08:00`; Policy never nudges in this window |
 | `TIMEZONE` | e.g. `Europe/Istanbul` |
 | `STATE_DB_PATH` | SQLite file for operational state (default `state.db`) |
+| `SCHEDULER_INTERVAL_S` | Seconds between proactive ticks (default `60`) |
 
 Feature switches live in code: `Config.manifest`. A module set to `False` is fully off
 (fail-closed) — not partially active.
