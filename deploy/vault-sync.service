@@ -1,0 +1,19 @@
+# One vault sync pass (commit local changes, pull --rebase, push). Triggered by
+# vault-sync.timer. A conflict makes this unit fail; nothing is forced or dropped.
+
+[Unit]
+Description=Second Brain vault git sync
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=secondbrain
+Group=secondbrain
+Environment=VAULT_PATH=/srv/vault
+ExecStart=/opt/second-brain/deploy/vault-sync.sh
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/vault /var/lib/secondbrain

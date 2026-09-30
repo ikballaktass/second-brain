@@ -9,7 +9,8 @@ the day-to-day reference for writing code.
 | [ARCHITECTURE.md](ARCHITECTURE.md) | understand how the layers fit together and how a message flows through the system |
 | [MODULES.md](MODULES.md) | look up what a specific module/class is responsible for and its status |
 | [DATA_MODEL.md](DATA_MODEL.md) | know the exact vault layout, frontmatter schemas, and `state_db` tables |
-| [DEVELOPMENT.md](DEVELOPMENT.md) | set up locally, follow conventions, add a new tool, run tests, deploy |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | set up locally, follow conventions, add a new tool, run tests |
+| [DEPLOY.md](DEPLOY.md) | run the bot 24/7 (systemd), sync the vault, keep secrets off it |
 
 **Golden rule of this codebase:** the Markdown vault is the single **source of truth**.
 The embedding index is *derived* (rebuildable), and `state_db` holds only *operational*
