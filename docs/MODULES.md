@@ -78,8 +78,14 @@ Embedding index, derived from the vault.
 
 ### `storage/state_db.py` — `StateDB`
 SQLite, operational state only.
-- `reminders_due()`, `save_message(chat_id, role, text)`, `jobs()`
-- Status: **stub**
+- reminders: `add_reminder`, `get_reminder`, `list_reminders`, `reminders_due(now)`,
+  `set_reminder_status`, `defer_reminder`, `delete_reminder`
+- messages: `save_message(chat_id, role, text)`, `recent_messages(chat_id, limit)`,
+  `prune_messages(older_than)`
+- jobs: `jobs()`, `upsert_job(kind, schedule)`, `mark_job_run(kind, when)`
+- meta: `get_meta`, `set_meta`, `last_nudge()`, `set_last_nudge(when)`
+- One thread-safe connection; naive local datetimes stored as ISO text (aware ones rejected)
+- Status: **done**
 
 ## cross-cutting
 

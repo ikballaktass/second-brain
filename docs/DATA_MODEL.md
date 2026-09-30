@@ -84,7 +84,13 @@ updated: 2026-09-18
 
 ## `state_db` (SQLite) schema
 
-Operational only — never user content. Suggested tables:
+Operational only — never user content. Implemented in `storage/state_db.py`; the schema
+version is tracked in `PRAGMA user_version`. `status` and `role` also have `CHECK` constraints,
+and `reminders(status, due)` and `messages(chat_id, id)`, `messages(ts)` are indexed.
+
+All datetimes are **naive local time** stored as ISO text with second precision
+(`2026-09-18T14:05:00`), so string comparison in SQL equals time comparison.
+Timezone-aware datetimes are rejected.
 
 ```sql
 CREATE TABLE reminders (
@@ -106,7 +112,7 @@ CREATE TABLE messages (
 
 CREATE TABLE jobs (
   id INTEGER PRIMARY KEY,
-  kind TEXT NOT NULL,               -- reminder|journal_check|morning_brief|analyze
+  kind TEXT NOT NULL UNIQUE,        -- reminder|journal_check|morning_brief|analyze (one per kind)
   schedule TEXT,
   last_run TEXT
 );
