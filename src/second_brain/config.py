@@ -16,7 +16,7 @@ class Config:
         "capture": True,
         "journal": True,
         "calendar": False,   # Phase 2
-        "proactive": False,  # Phase 3
+        "proactive": True,   # Phase 3: reminders + scheduler + send path
         "recall": False,     # Phase 4
     }
 
