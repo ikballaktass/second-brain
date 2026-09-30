@@ -41,7 +41,7 @@ All tools implement `tools/base.py` → `Tool` (`name`, `run(args)`).
 |--------|-------|----------------|-------|--------|
 | `note_writer.py` | `NoteWriter` | Write/update Markdown notes; **only** vault writer | 0 | stub |
 | `link_capturer.py` | `LinkCapturer` | Fetch URL → summarize + tag → `NoteWriter.save_bookmark` | 1 | done |
-| `reminder_manager.py` | `ReminderManager` | Reminder CRUD + lifecycle | 3 | stub |
+| `reminder_manager.py` | `ReminderManager` | Reminder create/list/close + lifecycle (`due`, `mark_sent`, `defer`) on StateDB; registered only when `proactive` is on | 3 | done |
 | `task_manager.py` | `TaskManager` | Tasks with priority | 3 | stub |
 | `calendar.py` | `CalendarTool` | Google Calendar read/write | 2 | stub |
 | `retriever.py` | `Retriever` | Semantic search over the vault | 4 | stub |

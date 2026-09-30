@@ -5,6 +5,7 @@ Chooses and invokes tools via tool-calling based on the classified intent.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,17 @@ You are Second Brain, a personal assistant for a single user, reached via Telegr
   note_writer tool. Give the note a short, descriptive title.
 - When the message contains a URL, call the link_capturer tool with that url, the
   user's accompanying words as note, and source if they said where it came from.
+- When the user wants to be reminded of something at a specific time, call the
+  reminder_manager tool with action=create and a due time in ISO local format,
+  computed from the current local time given below. Use action=list or action=close
+  when they ask about or cancel their reminders.
 - Only use the tools you are given. If you cannot help with something, say so.
 """
+
+
+def system_prompt(now: datetime) -> str:
+    """SYSTEM_PROMPT plus the current local time, so the LLM can resolve "tomorrow 10am"."""
+    return f"{SYSTEM_PROMPT}\nCurrent local time: {now:%Y-%m-%d %H:%M} ({now:%A}).\n"
 
 
 class Orchestrator:
@@ -37,7 +47,9 @@ class Orchestrator:
 
         api_tools = [t.to_api() for t in self.tools.values()]
 
-        result = self.llm.complete(message, tools=api_tools, system=SYSTEM_PROMPT)
+        result = self.llm.complete(
+            message, tools=api_tools, system=system_prompt(datetime.now())
+        )
 
         if not result.tool_calls:
             return result.text

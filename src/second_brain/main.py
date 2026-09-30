@@ -13,9 +13,11 @@ from .llm_client import LLMClient
 from .orchestration.orchestrator import Orchestrator
 from .orchestration.router import Router
 from .storage.index_store import IndexStore
+from .storage.state_db import StateDB
 from .storage.vault_repository import VaultRepository
 from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
+from .tools.reminder_manager import ReminderManager
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,10 @@ def build() -> TelegramGateway:
     index = IndexStore(llm) if Config.enabled("recall") else None
     note_writer = NoteWriter(vault=vault, index=index)
     tools = [note_writer, LinkCapturer(llm=llm, note_writer=note_writer)]
+    # Fail-closed: reminders are only offered once something can actually send them.
+    if Config.enabled("proactive"):
+        state = StateDB(Config.get("STATE_DB_PATH", "state.db"))
+        tools.append(ReminderManager(state=state))
     orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
 
     async def on_message(chat_id: int, text: str) -> None:
