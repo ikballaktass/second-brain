@@ -18,6 +18,7 @@ from .proactive.scheduler import DEFAULT_INTERVAL_S, Scheduler
 from .storage.index_store import IndexStore
 from .storage.state_db import StateDB
 from .storage.vault_repository import VaultRepository
+from .tools.calendar import CalendarTool
 from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
 from .tools.reminder_manager import ReminderManager
@@ -34,14 +35,19 @@ def build() -> TelegramGateway:
     index = IndexStore(llm) if Config.enabled("recall") else None
     note_writer = NoteWriter(vault=vault, index=index)
     tools = [note_writer, LinkCapturer(llm=llm, note_writer=note_writer)]
+    # Fail-closed: when switched on, a missing/invalid Google token stops startup.
+    calendar = CalendarTool.from_config() if Config.enabled("calendar") else None
+    if calendar is not None:
+        tools.append(calendar)
     # Fail-closed: reminders, scheduler and send path switch on and off together.
     scheduler = None
     if Config.enabled("proactive"):
         state = StateDB(Config.get("STATE_DB_PATH", "state.db"))
         reminders = ReminderManager(state=state)
         tools.append(reminders)
-        # busy_until (calendar) is added once CalendarTool exists (#11).
-        policy = Policy.from_config(state)
+        policy = Policy.from_config(
+            state, busy_until=calendar.busy_until if calendar is not None else None
+        )
 
         async def send(text: str) -> None:
             await gateway.send_message(text)
