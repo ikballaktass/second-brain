@@ -26,7 +26,7 @@ never go in the vault or in git** — `.env` is gitignored.
 
 | Variable | Purpose |
 |----------|---------|
-| `ANTHROPIC_API_KEY` | Claude access (LLM + embeddings) |
+| `ANTHROPIC_API_KEY` | Claude access (LLM; embeddings are local) |
 | `TELEGRAM_BOT_TOKEN` | Bot token from BotFather |
 | `TELEGRAM_ALLOWED_CHAT_ID` | Only this chat id may talk to the bot |
 | `VAULT_PATH` | Absolute path to the Obsidian vault |
@@ -37,6 +37,8 @@ never go in the vault or in git** — `.env` is gitignored.
 | `POLICY_MAX_NUDGES_PER_DAY` | Daily cap on assistant-initiated nudges (default `3`); user reminders are exempt |
 | `TIMEZONE` | e.g. `Europe/Istanbul` |
 | `STATE_DB_PATH` | SQLite file for operational state (default `state.db`) |
+| `INDEX_PATH` | Derived embedding index (default `.index`, must be outside the vault) |
+| `EMBEDDING_MODEL` | sentence-transformers model (default multilingual MiniLM) |
 | `SCHEDULER_INTERVAL_S` | Seconds between proactive ticks (default `60`) |
 
 Feature switches live in code: `Config.manifest`. A module set to `False` is fully off
@@ -57,6 +59,22 @@ The calendar module is **off** by default (`Config.manifest["calendar"] = False`
 
 Once on, the LLM can list a day's events, and Policy holds reminders back until the current
 (timed, busy) event ends. `secrets/` is gitignored and must stay outside the vault.
+
+## Semantic recall (optional)
+
+The recall module is **off** by default (`Config.manifest["recall"] = False`). It needs no API
+key: embeddings are computed locally with `sentence-transformers`.
+
+1. Install the CPU build of torch before the requirements (much smaller than the default CUDA
+   build): `pip install torch --index-url https://download.pytorch.org/whl/cpu`.
+2. Build the index once: `PYTHONPATH=src python scripts/rebuild_index.py --query "test"`.
+   The first run downloads the model (~470 MB, into `HF_HOME`, default `~/.cache/huggingface`).
+3. Set `"recall": True` in `Config.manifest`. New notes and bookmarks are then indexed on
+   save, and the LLM gets the `retriever` tool.
+
+Re-run the script whenever notes were edited outside the bot (e.g. in Obsidian) or after
+changing `EMBEDDING_MODEL`. Tests use a fake embedder; `RUN_MODEL_TESTS=1 pytest` also runs
+one check against the real model.
 
 ## Coding conventions
 
