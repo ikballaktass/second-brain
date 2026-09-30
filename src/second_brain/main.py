@@ -31,6 +31,7 @@ from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
 from .tools.reminder_manager import ReminderManager
 from .tools.retriever import Retriever
+from .tools.state_manager import StateManager
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +65,12 @@ def build() -> TelegramGateway:
         state = StateDB(Config.get("STATE_DB_PATH", "state.db"))
         reminders = ReminderManager(state=state)
         tools.append(reminders)
+        state_manager = StateManager(note_writer=note_writer)
+        tools.append(state_manager)
         policy = Policy.from_config(
-            state, busy_until=calendar.busy_until if calendar is not None else None
+            state,
+            busy_until=calendar.busy_until if calendar is not None else None,
+            state_flags=state_manager.current,
         )
 
         async def send(text: str) -> None:
