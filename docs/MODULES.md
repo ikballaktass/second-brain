@@ -82,10 +82,19 @@ All tools implement `tools/base.py` → `Tool` (`name`, `run(args)`).
 | `calendar.py` | `CalendarTool` | Google Calendar read-only: `list` a day's events (LLM) and `busy_until(t)` for Policy; 5-min cache; off until OAuth is set up | 2 | done |
 | `retriever.py` | `Retriever` | Semantic search over the vault (`query`, `k` ≤ 10) → `path · score · snippet`; registered when `recall` is on (default) | 4 | done |
 | `journal_writer.py` | `JournalWriter` | Append the user's words verbatim (`**HH:MM** — …`) to `journal/YYYY-MM-DD.md` (day starts 04:00); keeps frontmatter; re-indexes the day as `journal`; `has_entries(day)` | 5 | done |
-| `journal_analyzer.py` | `JournalAnalyzer` | End-of-day metric extraction (fixed schema) | 5 | stub |
+| `journal_analyzer.py` | `JournalAnalyzer` | End-of-day metrics (mood/energy/productivity/stress, 1-5) via one LLM call per day; fills only empty fields through `JournalWriter.annotate` | 5 | done |
 
-`JournalAnalyzer` is intentionally **not** a `Tool` — it is driven by the scheduler, not by
-user intent. It must fill the fixed metric schema only and never invent new metrics.
+`JournalAnalyzer` is intentionally **not** a `Tool` — it is driven by the scheduler (job
+`analyze`, daily 04:30 and once at startup), not by user intent. It must fill the fixed metric
+schema only and never invent new metrics:
+- `parse_metrics` reads exactly the four `DayMetrics` fields; other keys, non-integers and
+  values outside 1-5 are dropped
+- `analyze(day)` — no LLM call for an empty/missing journal; writes only metrics that are
+  still empty (hand edits win) via `JournalWriter.annotate`, which also re-embeds the day
+- `run_pending(now)` — the last 7 *finished* journal days not yet marked
+  `journal_analyzed:<date>` in `state_db`; marked once analyzed (even with nulls), left
+  unmarked on LLM failure so the next run retries
+- `JournalWriter.annotate(day, fields)` / `read_day(day)` keep the vault at two writers
 
 ## proactive
 

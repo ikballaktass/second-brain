@@ -71,8 +71,11 @@ events: swing class
 **21:40** — Each entry is appended verbatim by JournalWriter with its time.
 ```
 
-`JournalWriter` creates the file with only `type` and `date`; metric fields appear once
-`JournalAnalyzer` (#21) fills them, and hand edits are preserved on every append. A journal
+`JournalWriter` creates the file with only `type` and `date`. `JournalAnalyzer` fills
+`mood`/`energy`/`productivity`/`stress` (integers 1-5) after the day ends, and **only the
+ones still empty** — a value you set by hand is never overwritten, and a metric the text does
+not support is left out rather than guessed. `people`, `events`, `cycle_phase` and
+`exam_week` are not filled automatically yet. A journal
 day runs from **04:00 to 04:00**, so an entry written at 01:30 belongs to the previous date.
 
 ### State flags (`State.md`)
