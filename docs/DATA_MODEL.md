@@ -80,16 +80,25 @@ day runs from **04:00 to 04:00**, so an entry written at 01:30 belongs to the pr
 
 ### State flags (`State.md`)
 The most sensitive data (energy/cycle/exam). Kept in plain Markdown, **under user control**,
-so it can be read and edited by hand. `Policy` reads this note.
+so it can be read and edited by hand. `Policy` reads this note. Written by `StateManager`
+through `NoteWriter.update_state` (other keys you add by hand are kept); never indexed, and
+values never appear in logs or `state_db`.
 ```yaml
 ---
 type: state
-energy: normal            # low | normal | high
-cycle_phase: follicular    # optional
-exam_week: false
+energy: low               # low | normal | high
+energy_until: 2026-09-21   # optional end date; set by the tool (default +3 days)
+exam_week: true
+exam_until: 2026-09-25     # optional end date; set by the tool (default +7 days)
+cycle_phase: follicular    # optional: menstrual | follicular | ovulatory | luteal
 updated: 2026-09-18
 ---
 ```
+
+A flag with an end date switches itself off after that date; without one (e.g. edited by
+hand) it stays until changed. Effects, for assistant-initiated `nudge`s only (reminders the
+user set are never held back): exam week → none; low energy → at most 1 a day; high energy and
+cycle phase → no change.
 
 ## `state_db` (SQLite) schema
 
