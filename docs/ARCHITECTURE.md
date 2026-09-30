@@ -69,6 +69,10 @@ End-of-day metrics come from `tools/journal_analyzer.py` (job `analyze`, 04:30 d
 startup; silent — it sends nothing, so it does not go through Policy). It writes through
 `JournalWriter.annotate`, keeping the vault at two writers.
 
+While the user reports high energy, `orchestration/energy_suggester.py` (job
+`energy_suggestion`) may suggest one demanding, nearly finished or frequently revisited note
+a day, also as a `nudge` through Policy.
+
 The empty-journal check is `orchestration/journal_nudger.py` (job `journal_check`, every 30
 minutes after `JOURNAL_CHECK_TIME`, at most once a day, `kind="nudge"`).
 
