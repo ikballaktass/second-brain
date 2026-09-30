@@ -28,7 +28,7 @@ class Config:
         "journal": True,
         "calendar": False,   # Phase 2
         "proactive": True,   # Phase 3: reminders + scheduler + send path
-        "recall": False,     # Phase 4
+        "recall": True,      # Phase 4: local embeddings + retriever (index: scripts/rebuild_index.py)
     }
 
     @staticmethod

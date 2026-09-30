@@ -52,7 +52,7 @@ All tools implement `tools/base.py` → `Tool` (`name`, `run(args)`).
 | `reminder_manager.py` | `ReminderManager` | Reminder create/list/close + lifecycle (`due`, `mark_sent`, `defer`) on StateDB; registered only when `proactive` is on | 3 | done |
 | `task_manager.py` | `TaskManager` | Tasks with priority | 3 | stub |
 | `calendar.py` | `CalendarTool` | Google Calendar read-only: `list` a day's events (LLM) and `busy_until(t)` for Policy; 5-min cache; off until OAuth is set up | 2 | done |
-| `retriever.py` | `Retriever` | Semantic search over the vault (`query`, `k` ≤ 10) → `path · score · snippet`; registered when `recall` is on | 4 | done |
+| `retriever.py` | `Retriever` | Semantic search over the vault (`query`, `k` ≤ 10) → `path · score · snippet`; registered when `recall` is on (default) | 4 | done |
 | `journal_writer.py` | `JournalWriter` | Open/append today's journal note | 5 | stub |
 | `journal_analyzer.py` | `JournalAnalyzer` | End-of-day metric extraction (fixed schema) | 5 | stub |
 
