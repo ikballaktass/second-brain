@@ -49,6 +49,7 @@ Telegram → telegram_gateway._on_message   (auth-check the chat id)
         → orchestrator picks tool(s) via LLM tool-calling
         → tool.run(args)                   (e.g. note_writer → vault_repository.write)
         → orchestrator composes reply
+        → recall_suggester may append "💡 Bu sana şunu hatırlatıyor: …" (older related note)
         → telegram_gateway.send(chat_id, reply)
 ```
 

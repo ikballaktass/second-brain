@@ -12,6 +12,7 @@ from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.context_builder import ContextBuilder
 from .orchestration.orchestrator import Orchestrator
+from .orchestration.recall_suggester import RecallSuggester
 from .orchestration.reminder_dispatcher import ReminderDispatcher
 from .orchestration.router import Router
 from .proactive.policy import Policy
@@ -49,6 +50,7 @@ def build() -> TelegramGateway:
         tools.append(calendar)
     # Fail-closed: reminders, scheduler and send path switch on and off together.
     scheduler = None
+    state = None
     if Config.enabled("proactive"):
         state = StateDB(Config.get("STATE_DB_PATH", "state.db"))
         reminders = ReminderManager(state=state)
@@ -67,7 +69,11 @@ def build() -> TelegramGateway:
             interval_s=interval,
         )
     context = ContextBuilder.from_config(index, vault) if index is not None else None
-    orch = Orchestrator(llm=llm, router=Router(llm), context=context, tools=tools)
+    # Cooldowns persist in state_db when it exists (proactive on), else in memory.
+    suggester = RecallSuggester(state=state) if index is not None else None
+    orch = Orchestrator(
+        llm=llm, router=Router(llm), context=context, tools=tools, suggester=suggester
+    )
 
     async def on_message(chat_id: int, text: str) -> None:
         try:

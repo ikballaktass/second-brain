@@ -37,14 +37,16 @@ def system_prompt(now: datetime) -> str:
 
 
 class Orchestrator:
-    def __init__(self, llm, router, context, tools: list) -> None:
+    def __init__(self, llm, router, context, tools: list, suggester=None) -> None:
         self.llm = llm
         self.router = router
         self.context = context
         self.tools = {t.name: t for t in tools}
+        self.suggester = suggester
 
     def handle(self, message: str) -> str:
-        """Classify -> build context -> call tool(s) -> compose a reply."""
+        """Classify -> build context -> call tool(s) -> compose a reply (+ recall hint)."""
+        intent = None
         if self.router is not None:
             intent = self.router.classify(message)
             logger.info("Intent: %s", intent.value)
@@ -53,33 +55,46 @@ class Orchestrator:
         api_tools = [t.to_api() for t in self.tools.values()]
 
         system = system_prompt(datetime.now())
-        related = self._related_notes(message)
+        # Built before any tool runs, so a note saved in this turn is not in it.
+        context = self._build_context(message)
+        related = context.render() if context is not None else ""
         if related:
             system = f"{system}\n{related}\n"
 
         result = self.llm.complete(message, tools=api_tools, system=system)
 
         if not result.tool_calls:
-            return result.text
+            reply = result.text
+        else:
+            replies = []
+            if result.text:
+                replies.append(result.text)
+            for call in result.tool_calls:
+                replies.append(self._call_tool(call.name, call.input))
+            reply = "\n".join(replies)
 
-        replies = []
-        if result.text:
-            replies.append(result.text)
-        
-        for call in result.tool_calls:
-            replies.append(self._call_tool(call.name, call.input))        
-        
-        return "\n".join(replies)
+        hint = self._recall_hint(context, intent, reply)
+        return f"{reply}\n\n{hint}" if hint else reply
 
-    def _related_notes(self, message: str) -> str:
-        """Rendered related-notes block, or "" (no context builder, nothing relevant, error)."""
+    def _build_context(self, message: str):
+        """Related notes for this message, or None (no builder, or it failed)."""
         if self.context is None:
-            return ""
+            return None
         try:
-            return self.context.build(message).render()
+            return self.context.build(message)
         except Exception:
             logger.exception("Building context failed; answering without related notes")
-            return ""
+            return None
+
+    def _recall_hint(self, context, intent, reply: str) -> str | None:
+        """'Reminds you of' line from the suggester; never breaks the reply."""
+        if self.suggester is None:
+            return None
+        try:
+            return self.suggester.suggest(context, intent, reply)
+        except Exception:
+            logger.exception("Recall suggestion failed; replying without it")
+            return None
 
     def _call_tool(self, name: str, args: dict):
         if name not in self.tools:
