@@ -40,7 +40,7 @@ All tools implement `tools/base.py` → `Tool` (`name`, `run(args)`).
 | Module | Class | Responsibility | Phase | Status |
 |--------|-------|----------------|-------|--------|
 | `note_writer.py` | `NoteWriter` | Write/update Markdown notes; **only** vault writer | 0 | stub |
-| `link_capturer.py` | `LinkCapturer` | Fetch URL → summarize → hand to NoteWriter | 1 | stub |
+| `link_capturer.py` | `LinkCapturer` | Fetch URL → extract → summarize → `CaptureResult` (vault write via NoteWriter in #9) | 1 | done |
 | `reminder_manager.py` | `ReminderManager` | Reminder CRUD + lifecycle | 3 | stub |
 | `task_manager.py` | `TaskManager` | Tasks with priority | 3 | stub |
 | `calendar.py` | `CalendarTool` | Google Calendar read/write | 2 | stub |
