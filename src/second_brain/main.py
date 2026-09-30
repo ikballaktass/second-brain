@@ -32,6 +32,7 @@ from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
 from .tools.reminder_manager import ReminderManager
 from .tools.retriever import Retriever
+from .tools.trend_report import TrendReport
 from .tools.state_manager import StateManager
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ def build() -> TelegramGateway:
         tools.append(Retriever(index=index))
     journal = JournalWriter(vault=vault, index=index) if Config.enabled("journal") else None
     if journal is not None:
-        tools.append(journal)
+        tools.extend([journal, TrendReport(journal=journal)])
     # Fail-closed: when switched on, a missing/invalid Google token stops startup.
     calendar = CalendarTool.from_config() if Config.enabled("calendar") else None
     if calendar is not None:

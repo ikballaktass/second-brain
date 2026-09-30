@@ -93,6 +93,7 @@ All tools implement `tools/base.py` → `Tool` (`name`, `run(args)`).
 | `note_writer.py` | `NoteWriter` | Write/update Markdown notes; **only** vault writer | 0 | stub |
 | `link_capturer.py` | `LinkCapturer` | Fetch URL → summarize + tag → `NoteWriter.save_bookmark` | 1 | done |
 | `reminder_manager.py` | `ReminderManager` | Reminder create/list/close + lifecycle (`due`, `mark_sent`, `defer`) on StateDB; registered only when `proactive` is on | 3 | done |
+| `trend_report.py` | `TrendReport` | On-request weekly/monthly metric summary (Turkish): average, lowest/highest day, change vs the previous period (`→ benzer` under 0.3); `yetersiz veri` below 3 days (week) / 7 days (month); always ends "tahmin içermez"; no LLM; registered with the journal | 5 | done |
 | `state_manager.py` | `StateManager` | `set`/`show` energy, exam week, cycle phase in `State.md` via `NoteWriter.update_state` (defaults: energy +3 days, exam +7 days); `current()` feeds Policy; registered when `proactive` is on | 5 | done |
 | `task_manager.py` | `TaskManager` | Tasks with priority | 3 | stub |
 | `calendar.py` | `CalendarTool` | Google Calendar read-only: `list` a day's events (LLM) and `busy_until(t)` for Policy; 5-min cache; off until OAuth is set up | 2 | done |
