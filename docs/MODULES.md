@@ -14,6 +14,7 @@ Only `TELEGRAM_ALLOWED_CHAT_ID` is served (single-user).
 - `start()` — begin long-polling, register the handler
 - `send(chat_id, text)` — used by both replies and the proactive path
 - `_on_message(update)` — auth-check, then hand off to the orchestrator
+- Handler errors are logged with traceback and the user gets a fixed "⚠️ Bir hata oluştu, loglara bak." message (no exception details); an `add_error_handler` hook logs errors outside the handler (network, polling)
 - Depends on: `orchestration` · Status: **stub**
 
 ## orchestration

@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 MessageHandler = Callable[[int, str], Awaitable[None]]
 LifecycleHook = Callable[[], Awaitable[None]]
 
+# Fixed text on purpose: never echo exception details (may contain secrets) to the chat.
+ERROR_MESSAGE = "⚠️ Bir hata oluştu, loglara bak."
+
 class TelegramGateway:
 
     def __init__(
@@ -41,6 +44,8 @@ class TelegramGateway:
         # Run inside the bot's own event loop: before polling starts / after it stops.
         self.application.post_init = self._post_init
         self.application.post_shutdown = self._post_shutdown
+        # Catches errors raised outside _on_update (network, polling, ...).
+        self.application.add_error_handler(self._on_error)
     
     def start(self) -> None:
         """Register the message handler and start long-polling (blocks)."""
@@ -66,7 +71,25 @@ class TelegramGateway:
             logger.warning("Ignored message from unauthorized chat %s", chat_id)
             return
 
-        await self.message_handler(chat_id, text)
+        try:
+            await self.message_handler(chat_id, text)
+        except Exception:
+            logger.exception("Message handler failed")
+            await self._notify_error()
+
+    async def _on_error(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Log errors PTB caught outside _on_update; tell the user if it was their message."""
+        logger.error("Unhandled Telegram error", exc_info=context.error)
+        chat = getattr(update, "effective_chat", None)
+        if chat is not None and chat.id == self.allowed_chat_id:
+            await self._notify_error()
+
+    async def _notify_error(self) -> None:
+        """Send the generic error message; a failed send is logged, never raised."""
+        try:
+            await self.send_message(ERROR_MESSAGE)
+        except Exception:
+            logger.exception("Could not deliver error message to Telegram")
 
     async def send_message(self, text: str) -> None:
         await self.application.bot.send_message(
