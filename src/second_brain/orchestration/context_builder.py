@@ -14,6 +14,7 @@ from __future__ import annotations
 import html
 import logging
 from dataclasses import dataclass, field
+from datetime import date, datetime
 
 import frontmatter
 
@@ -48,6 +49,7 @@ class RelatedNote:
     score: float
     excerpt: str
     truncated: bool = False
+    created: datetime | None = None   # frontmatter `created`, else file mtime
 
 
 @dataclass(frozen=True)
@@ -69,12 +71,30 @@ class Context:
         return "\n\n".join(blocks)
 
 
-def _note_text(raw: str) -> str:
-    """Body of a note, led by a bookmark's summary and url when present."""
+def _as_datetime(value) -> datetime | None:
+    """Frontmatter `created`/`date` (YAML datetime, date or ISO string) -> naive local."""
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, date):
+        parsed = datetime.combine(value, datetime.min.time())
+    elif isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    else:
+        return None
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone().replace(tzinfo=None)
+    return parsed
+
+
+def _note_text(raw: str) -> tuple[str, datetime | None]:
+    """(body led by a bookmark's summary and url, frontmatter creation time if any)."""
     try:
         post = frontmatter.loads(raw)
     except Exception:
-        return raw.strip()
+        return raw.strip(), None
     lines = []
     if post.get("summary"):
         lines.append(f"Summary: {post['summary']}")
@@ -82,7 +102,7 @@ def _note_text(raw: str) -> str:
         lines.append(f"URL: {post['url']}")
     if post.content.strip():
         lines.append(post.content.strip())
-    return "\n".join(lines)
+    return "\n".join(lines), _as_datetime(post.get("created") or post.get("date"))
 
 
 def _cut(text: str, limit: int) -> tuple[str, bool]:
@@ -142,7 +162,8 @@ class ContextBuilder:
             if remaining < MIN_EXCERPT_CHARS:
                 break
             try:
-                text = _note_text(self.vault.read(hit.path))
+                text, created = _note_text(self.vault.read(hit.path))
+                created = created or self.vault.modified_at(hit.path)
             except FileNotFoundError:
                 logger.info("Index points to a missing note %s; skipping", hit.path)
                 continue
@@ -152,6 +173,8 @@ class ContextBuilder:
             if not text:
                 continue
             excerpt, truncated = _cut(text, min(self.per_note_chars, remaining))
-            related.append(RelatedNote(hit.path, hit.title, hit.score, excerpt, truncated))
+            related.append(
+                RelatedNote(hit.path, hit.title, hit.score, excerpt, truncated, created)
+            )
             remaining -= len(excerpt)
         return Context(related)

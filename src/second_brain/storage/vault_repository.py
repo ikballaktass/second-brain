@@ -1,6 +1,7 @@
 """Vault repository — Markdown files, the SOURCE OF TRUTH (storage layer)."""
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from frontmatter import Post, dumps, loads
@@ -63,6 +64,13 @@ class VaultRepository:
                 continue
             paths.append(rel.as_posix())
         return sorted(paths)
+
+    def modified_at(self, rel_path: str) -> datetime:
+        """Last modification time of a note (naive local time)."""
+        full = self._resolve(rel_path)
+        if not full.is_file():
+            raise FileNotFoundError(f"File {rel_path} does not exist in the vault.")
+        return datetime.fromtimestamp(full.stat().st_mtime)
 
     def exists(self, rel_path: str) -> bool:
         """True if a note already exists at rel_path."""
