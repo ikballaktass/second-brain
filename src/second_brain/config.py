@@ -26,9 +26,9 @@ class Config:
     manifest: dict[str, bool] = {
         "capture": True,
         "journal": True,
-        "calendar": False,   # Phase 2
-        "proactive": True,   # Phase 3: reminders + scheduler + send path
-        "recall": True,      # Phase 4: local embeddings + retriever (index: scripts/rebuild_index.py)
+        "calendar": True,
+        "proactive": True,
+        "recall": True,
     }
 
     @staticmethod
