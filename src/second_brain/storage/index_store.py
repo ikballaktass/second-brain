@@ -14,6 +14,7 @@ from typing import Callable
 
 import frontmatter
 
+from ..models import Bookmark, JournalEntry
 from .vault_repository import VaultRepository
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,14 @@ def _chunks(text: str, limit: int = CHUNK_CHARS) -> list[str]:
     return chunks
 
 
+def _note_type(note) -> str:
+    if isinstance(note, Bookmark):
+        return "bookmark"
+    if isinstance(note, JournalEntry):
+        return "journal"
+    return "note"
+
+
 def _title_from_path(path: str) -> str:
     return _STAMP.sub("", PurePosixPath(path).stem)
 
@@ -105,7 +114,7 @@ class IndexStore:
             content=note.content,
             tags=list(note.tags),
             summary=getattr(note, "summary", ""),
-            note_type="bookmark" if hasattr(note, "url") else "note",
+            note_type=_note_type(note),
             created=note.created.isoformat(timespec="seconds"),
         )
 

@@ -7,10 +7,13 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from apscheduler.triggers.interval import IntervalTrigger
+
 from .config import Config, assert_outside_vault
 from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.context_builder import ContextBuilder
+from .orchestration.journal_nudger import JournalNudger
 from .orchestration.orchestrator import Orchestrator
 from .orchestration.recall_suggester import RecallSuggester
 from .orchestration.reminder_dispatcher import ReminderDispatcher
@@ -21,6 +24,7 @@ from .storage.index_store import DEFAULT_INDEX_PATH, IndexStore
 from .storage.state_db import StateDB
 from .storage.vault_repository import VaultRepository
 from .tools.calendar import CalendarTool
+from .tools.journal_writer import JournalWriter
 from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
 from .tools.reminder_manager import ReminderManager
@@ -44,6 +48,9 @@ def build() -> TelegramGateway:
     tools = [note_writer, LinkCapturer(llm=llm, note_writer=note_writer)]
     if index is not None:
         tools.append(Retriever(index=index))
+    journal = JournalWriter(vault=vault, index=index) if Config.enabled("journal") else None
+    if journal is not None:
+        tools.append(journal)
     # Fail-closed: when switched on, a missing/invalid Google token stops startup.
     calendar = CalendarTool.from_config() if Config.enabled("calendar") else None
     if calendar is not None:
@@ -68,6 +75,9 @@ def build() -> TelegramGateway:
             on_due=ReminderDispatcher(reminders=reminders, policy=policy, send=send),
             interval_s=interval,
         )
+        if journal is not None:
+            nudger = JournalNudger.from_config(journal, policy, state, send)
+            scheduler.add_job("journal_check", nudger, IntervalTrigger(minutes=30))
     context = ContextBuilder.from_config(index, vault) if index is not None else None
     # Cooldowns persist in state_db when it exists (proactive on), else in memory.
     suggester = RecallSuggester(state=state) if index is not None else None
