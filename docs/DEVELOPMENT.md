@@ -33,6 +33,7 @@ never go in the vault or in git** — `.env` is gitignored.
 | `GOOGLE_CREDENTIALS_PATH` | OAuth client secret file (Phase 2) |
 | `QUIET_HOURS` | e.g. `23:00-08:00`; Policy never nudges in this window |
 | `TIMEZONE` | e.g. `Europe/Istanbul` |
+| `STATE_DB_PATH` | SQLite file for operational state (default `state.db`) |
 
 Feature switches live in code: `Config.manifest`. A module set to `False` is fully off
 (fail-closed) — not partially active.
