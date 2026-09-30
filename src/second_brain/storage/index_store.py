@@ -71,7 +71,8 @@ def _note_type(note) -> str:
     return "note"
 
 
-def _title_from_path(path: str) -> str:
+def title_from_path(path: str) -> str:
+    """Note title from its file name, without NoteWriter's timestamp prefix."""
     return _STAMP.sub("", PurePosixPath(path).stem)
 
 
@@ -110,7 +111,7 @@ class IndexStore:
             raise ValueError("note has no vault path; save it before indexing")
         self._index(
             path=note.path,
-            title=note.title or _title_from_path(note.path),
+            title=note.title or title_from_path(note.path),
             content=note.content,
             tags=list(note.tags),
             summary=getattr(note, "summary", ""),
@@ -136,7 +137,7 @@ class IndexStore:
             tags = meta.get("tags") or []
             self._index(
                 path=path,
-                title=_title_from_path(path),
+                title=title_from_path(path),
                 content=post.content,
                 tags=[str(t) for t in tags] if isinstance(tags, list) else [str(tags)],
                 summary=str(meta.get("summary") or ""),
