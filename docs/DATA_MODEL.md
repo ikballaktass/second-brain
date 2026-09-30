@@ -125,14 +125,20 @@ CREATE TABLE meta (
 
 ## Index
 
-`chromadb` collection of note chunks. Each vector carries metadata used to filter and to
-cite the source:
+`chromadb` collection `notes` (cosine) of note chunks at `INDEX_PATH` (default `.index/`,
+outside the vault). Each chunk is ~500 characters of "title, summary, tags, body"; its id is
+`<path>#<n>`. Each vector carries metadata used to filter and to cite the source:
 
 ```
-metadata = { "path": "notes/....md", "type": "note", "tags": [...], "created": "..." }
+metadata = { "path": "notes/....md", "type": "note", "title": "...",
+             "tags": "ai, productivity", "created": "...", "chunk": 0 }
 ```
 
-The index is fully derived: deleting `.index/` and re-embedding the vault must reproduce it.
+`tags` is a comma-joined string (chromadb metadata values are scalars). Vectors come from the
+local multilingual model in `embeddings.py`.
+
+The index is fully derived: deleting `.index/` and re-embedding the vault must reproduce it —
+`scripts/rebuild_index.py` does exactly that.
 
 ## Reminder lifecycle
 

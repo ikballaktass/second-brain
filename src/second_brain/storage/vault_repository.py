@@ -19,7 +19,11 @@ class VaultRepository:
         return full
 
     def read(self, rel_path: str) -> str:
-        raise NotImplementedError
+        """Return a note's raw Markdown (frontmatter included)."""
+        full = self._resolve(rel_path)
+        if not full.is_file():
+            raise FileNotFoundError(f"File {rel_path} does not exist in the vault.")
+        return full.read_text(encoding="utf-8")
 
     def write(self, rel_path: str, content: str, frontmatter: dict | None = None) -> None:
         """Write a note (with YAML frontmatter). The only write path to the vault."""
@@ -45,7 +49,20 @@ class VaultRepository:
         full.write_text(text, encoding="utf-8")
 
     def list(self, subdir: str = "") -> list[str]:
-        raise NotImplementedError
+        """Vault-relative paths of all Markdown notes under subdir, sorted.
+
+        Hidden files and folders (.obsidian, .trash, .git, ...) are skipped.
+        """
+        base = self._resolve(subdir)
+        if not base.is_dir():
+            return []
+        paths = []
+        for full in base.rglob("*.md"):
+            rel = full.relative_to(self.root)
+            if any(part.startswith(".") for part in rel.parts) or not full.is_file():
+                continue
+            paths.append(rel.as_posix())
+        return sorted(paths)
 
     def exists(self, rel_path: str) -> bool:
         """True if a note already exists at rel_path."""

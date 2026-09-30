@@ -52,7 +52,7 @@ All tools implement `tools/base.py` → `Tool` (`name`, `run(args)`).
 | `reminder_manager.py` | `ReminderManager` | Reminder create/list/close + lifecycle (`due`, `mark_sent`, `defer`) on StateDB; registered only when `proactive` is on | 3 | done |
 | `task_manager.py` | `TaskManager` | Tasks with priority | 3 | stub |
 | `calendar.py` | `CalendarTool` | Google Calendar read-only: `list` a day's events (LLM) and `busy_until(t)` for Policy; 5-min cache; off until OAuth is set up | 2 | done |
-| `retriever.py` | `Retriever` | Semantic search over the vault | 4 | stub |
+| `retriever.py` | `Retriever` | Semantic search over the vault (`query`, `k` ≤ 10) → `path · score · snippet`; registered when `recall` is on | 4 | done |
 | `journal_writer.py` | `JournalWriter` | Open/append today's journal note | 5 | stub |
 | `journal_analyzer.py` | `JournalAnalyzer` | End-of-day metric extraction (fixed schema) | 5 | stub |
 
@@ -91,13 +91,17 @@ The "whether/when to nudge" engine. Conservative by default.
 
 ### `storage/vault_repository.py` — `VaultRepository`
 Markdown files, the source of truth.
-- `read(rel_path)`, `write(rel_path, content, frontmatter)`, `upsert_frontmatter(rel_path, fields)`, `list(subdir)`
-- Status: **stub**
+- `read(rel_path)` (raw Markdown), `write(rel_path, content, frontmatter)`,
+  `upsert_frontmatter(rel_path, fields)`, `list(subdir)` (all `.md`, hidden folders skipped)
+- Status: **done**
 
 ### `storage/index_store.py` — `IndexStore`
-Embedding index, derived from the vault.
-- `upsert(note)`, `search(query, k)`
-- Depends on: `llm_client.embed` · Status: **stub**
+Embedding index, derived from the vault (local `chromadb` at `INDEX_PATH`, cosine).
+- `upsert(note)` — split into ~500-char paragraph chunks (title/summary/tags + body),
+  replaces the note's old chunks
+- `search(query, k) -> list[SearchHit(path, score, snippet, type, title)]` — best chunk per note
+- `remove(path)`, `rebuild(vault)` (drop + re-embed every note), `count()`
+- Depends on: an injected `embed(texts, kind)` (`llm_client.embed`) · Status: **done**
 
 ### `storage/state_db.py` — `StateDB`
 SQLite, operational state only.
@@ -117,8 +121,16 @@ SQLite, operational state only.
 - Status: **usable**
 
 ### `llm_client.py` — `LLMClient`
-- `complete(prompt, tools)`, `embed(text)`
-- Status: **stub**
+- `complete(prompt, tools, system, model, max_tokens)`
+- `embed(texts, kind)` — delegates to the local `Embedder` (Anthropic has no embeddings API)
+- Status: **done**
+
+### `embeddings.py` — `Embedder`
+Local multilingual sentence embeddings on CPU (sentence-transformers). Default model
+`paraphrase-multilingual-MiniLM-L12-v2` (Turkish + 50 languages, 384 dims), overridable with
+`EMBEDDING_MODEL`. Loaded lazily on first use; note text never leaves the machine.
+- `embed(texts, kind="document"|"query") -> list[list[float]]` (unit length)
+- Status: **done**
 
 ### `models.py`
 Domain dataclasses: `Intent`, `Note`, `Bookmark`, `DayMetrics`, `JournalEntry`,

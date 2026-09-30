@@ -12,12 +12,13 @@ from dotenv import find_dotenv, load_dotenv
 ENV_FILE = find_dotenv()
 load_dotenv(ENV_FILE)
 
-# Files that hold secrets or operational state, with the default each module uses.
-# None of them may live inside the vault: the vault is synced to git.
+# Files that hold secrets, operational state or the derived index, with the default each
+# module uses. None of them may live inside the vault: the vault is synced to git.
 OFF_VAULT_PATHS: dict[str, str] = {
     "STATE_DB_PATH": "state.db",
     "GOOGLE_CREDENTIALS_PATH": "secrets/google_credentials.json",
     "GOOGLE_TOKEN_PATH": "secrets/google_token.json",
+    "INDEX_PATH": ".index",
 }
 
 
@@ -47,7 +48,7 @@ class Config:
 
 
 def assert_outside_vault(vault_path: str) -> None:
-    """Raise if .env, state.db or a Google secret resolves to a path inside the vault.
+    """Raise if .env, state.db, the index or a Google secret resolves inside the vault.
 
     Paths are resolved like the modules resolve them (relative to the working
     directory, `~` expanded, symlinks followed), so `..` tricks and links are caught.

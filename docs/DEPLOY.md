@@ -22,7 +22,18 @@ sudo useradd --system --home-dir /var/lib/secondbrain --create-home --shell /usr
 sudo git clone https://github.com/<you>/second-brain.git /opt/second-brain
 sudo chown -R secondbrain:secondbrain /opt/second-brain
 sudo -u secondbrain python3 -m venv /opt/second-brain/.venv
+sudo -u secondbrain /opt/second-brain/.venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
 sudo -u secondbrain /opt/second-brain/.venv/bin/pip install -r /opt/second-brain/requirements.txt
+```
+
+The CPU build of torch (for local embeddings) keeps the install far smaller than the default
+CUDA build. The service sets `HF_HOME=/opt/second-brain/.cache/huggingface`, so the embedding
+model is downloaded there once. With recall on, build the index after the vault is in place
+(step 3):
+
+```bash
+cd /opt/second-brain && sudo -u secondbrain env HF_HOME=/opt/second-brain/.cache/huggingface \
+  PYTHONPATH=src .venv/bin/python scripts/rebuild_index.py
 ```
 
 ## 2. Secrets and configuration
@@ -39,7 +50,7 @@ Set at least `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALLOWED_CHAT_I
 
 **Secrets never touch the vault.** The vault is pushed to git, so anything inside it should be
 treated as published. `.env`, `state.db` and `secrets/` stay in `/opt/second-brain`. The bot
-enforces this at startup: if `.env`, `STATE_DB_PATH`, `GOOGLE_CREDENTIALS_PATH` or
+enforces this at startup: if `.env`, `STATE_DB_PATH`, `INDEX_PATH`, `GOOGLE_CREDENTIALS_PATH` or
 `GOOGLE_TOKEN_PATH` resolves to a path inside `VAULT_PATH` (including via `..` or a symlink), it
 refuses to start and says which one.
 
