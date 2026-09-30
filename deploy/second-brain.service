@@ -18,6 +18,8 @@ Group=secondbrain
 WorkingDirectory=/opt/second-brain
 Environment=PYTHONPATH=/opt/second-brain/src
 Environment=PYTHONUNBUFFERED=1
+# Embedding model cache (downloaded once, ~470 MB); must be writable under ProtectSystem.
+Environment=HF_HOME=/opt/second-brain/.cache/huggingface
 ExecStart=/opt/second-brain/.venv/bin/python -m second_brain.main
 Restart=on-failure
 RestartSec=10

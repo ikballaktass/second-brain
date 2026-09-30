@@ -9,6 +9,7 @@ __pycache__/
 secrets/
 state.db
 .index/
+.cache/
 
 # Tests
 tests/

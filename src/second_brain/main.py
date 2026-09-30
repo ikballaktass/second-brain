@@ -15,13 +15,14 @@ from .orchestration.reminder_dispatcher import ReminderDispatcher
 from .orchestration.router import Router
 from .proactive.policy import Policy
 from .proactive.scheduler import DEFAULT_INTERVAL_S, Scheduler
-from .storage.index_store import IndexStore
+from .storage.index_store import DEFAULT_INDEX_PATH, IndexStore
 from .storage.state_db import StateDB
 from .storage.vault_repository import VaultRepository
 from .tools.calendar import CalendarTool
 from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
 from .tools.reminder_manager import ReminderManager
+from .tools.retriever import Retriever
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +35,13 @@ def build() -> TelegramGateway:
     llm = LLMClient()
     vault = VaultRepository(vault_path)
     # Fail-closed: the index is wired only when the recall module is switched on.
-    index = IndexStore(llm) if Config.enabled("recall") else None
+    index = None
+    if Config.enabled("recall"):
+        index = IndexStore(embed=llm.embed, path=Config.get("INDEX_PATH", DEFAULT_INDEX_PATH))
     note_writer = NoteWriter(vault=vault, index=index)
     tools = [note_writer, LinkCapturer(llm=llm, note_writer=note_writer)]
+    if index is not None:
+        tools.append(Retriever(index=index))
     # Fail-closed: when switched on, a missing/invalid Google token stops startup.
     calendar = CalendarTool.from_config() if Config.enabled("calendar") else None
     if calendar is not None:
