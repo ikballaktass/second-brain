@@ -75,7 +75,10 @@ events: swing class
 `mood`/`energy`/`productivity`/`stress` (integers 1-5) after the day ends, and **only the
 ones still empty** — a value you set by hand is never overwritten, and a metric the text does
 not support is left out rather than guessed. `people`, `events`, `cycle_phase` and
-`exam_week` are not filled automatically yet. A journal
+`exam_week` are not filled automatically yet.
+
+`TrendReport` reads these metric fields (only integers 1-5 count, hand edits included) to
+describe a week or month on request; it never forecasts. A journal
 day runs from **04:00 to 04:00**, so an entry written at 01:30 belongs to the previous date.
 
 ### State flags (`State.md`)
