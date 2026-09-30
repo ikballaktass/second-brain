@@ -47,6 +47,8 @@ reminder: 2026-10-02        # optional; ISO date
 ---
 Original note the user sent, kept as context.
 ```
+If the page could not be fetched, the bookmark is still saved with empty `summary`/`tags`
+and the body ends with a `> Sayfa alınamadı: <reason>` line.
 
 ### Journal entry (`journal/YYYY-MM-DD.md`)
 Metrics are **written by `JournalAnalyzer`** and are editable by hand. The schema is
