@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from .config import Config
+from .config import Config, assert_outside_vault
 from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.orchestrator import Orchestrator
@@ -28,8 +28,10 @@ FALLBACK_REPLY = "Something went wrong. Please try again."
 
 
 def build() -> TelegramGateway:
+    vault_path = Config.secret("VAULT_PATH")
+    assert_outside_vault(vault_path)  # secrets/state must never be synced with the vault
     llm = LLMClient()
-    vault = VaultRepository(Config.secret("VAULT_PATH"))
+    vault = VaultRepository(vault_path)
     # Fail-closed: the index is wired only when the recall module is switched on.
     index = IndexStore(llm) if Config.enabled("recall") else None
     note_writer = NoteWriter(vault=vault, index=index)
