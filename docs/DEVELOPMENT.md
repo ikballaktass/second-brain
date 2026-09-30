@@ -62,15 +62,15 @@ Once on, the LLM can list a day's events, and Policy holds reminders back until 
 
 ## Semantic recall (optional)
 
-The recall module is **off** by default (`Config.manifest["recall"] = False`). It needs no API
-key: embeddings are computed locally with `sentence-transformers`.
+The recall module is **on** (`Config.manifest["recall"] = True`). It needs no API key:
+embeddings are computed locally with `sentence-transformers`. On a new machine:
 
 1. Install the CPU build of torch before the requirements (much smaller than the default CUDA
    build): `pip install torch --index-url https://download.pytorch.org/whl/cpu`.
 2. Build the index once: `PYTHONPATH=src python scripts/rebuild_index.py --query "test"`.
    The first run downloads the model (~470 MB, into `HF_HOME`, default `~/.cache/huggingface`).
-3. Set `"recall": True` in `Config.manifest`. New notes and bookmarks are then indexed on
-   save, and the LLM gets the `retriever` tool.
+3. New notes and bookmarks are indexed on save, and the LLM gets the `retriever` tool. To turn
+   recall off, set `"recall": False` in `Config.manifest`.
 
 Re-run the script whenever notes were edited outside the bot (e.g. in Obsidian) or after
 changing `EMBEDDING_MODEL`. Tests use a fake embedder; `RUN_MODEL_TESTS=1 pytest` also runs
