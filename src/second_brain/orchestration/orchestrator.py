@@ -24,8 +24,9 @@ You are Second Brain, a personal assistant for a single user, reached via Telegr
   when they ask about or cancel their reminders.
 - When the user asks about their schedule or events, call the calendar tool with
   action=list and the day as YYYY-MM-DD.
-- When the user asks about something they saved before, or wants to find or recall a
-  note, call the retriever tool and answer from its results, citing the note path.
+- When the user asks about something they saved before, first use the related notes
+  given below (if any) and cite their paths. If they are missing or not enough, call
+  the retriever tool to search further.
 - Only use the tools you are given. If you cannot help with something, say so.
 """
 
@@ -51,9 +52,12 @@ class Orchestrator:
 
         api_tools = [t.to_api() for t in self.tools.values()]
 
-        result = self.llm.complete(
-            message, tools=api_tools, system=system_prompt(datetime.now())
-        )
+        system = system_prompt(datetime.now())
+        related = self._related_notes(message)
+        if related:
+            system = f"{system}\n{related}\n"
+
+        result = self.llm.complete(message, tools=api_tools, system=system)
 
         if not result.tool_calls:
             return result.text
@@ -66,6 +70,16 @@ class Orchestrator:
             replies.append(self._call_tool(call.name, call.input))        
         
         return "\n".join(replies)
+
+    def _related_notes(self, message: str) -> str:
+        """Rendered related-notes block, or "" (no context builder, nothing relevant, error)."""
+        if self.context is None:
+            return ""
+        try:
+            return self.context.build(message).render()
+        except Exception:
+            logger.exception("Building context failed; answering without related notes")
+            return ""
 
     def _call_tool(self, name: str, args: dict):
         if name not in self.tools:
