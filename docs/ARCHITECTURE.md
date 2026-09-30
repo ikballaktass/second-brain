@@ -86,6 +86,7 @@ user right now?" as a first-class decision with its own rules, not an afterthoug
   disappears from tool lists and schedules entirely — it is never half-active.
 - **Secrets never touch the vault.** They come only from the environment via `Config`.
   The vault is synced to GitHub; secrets must not be.
+  `assert_outside_vault()` enforces this at startup for `.env`, `state.db` and Google secrets.
 - **The LLM is a tool, not the whole app.** `llm_client` is a thin wrapper. Business logic
   (what to save, when to nudge) lives in orchestration/tools/policy, not in prompts.
 

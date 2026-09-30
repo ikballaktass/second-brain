@@ -91,11 +91,9 @@ PYTHONPATH=src pytest            # or: pip install -e . && pytest
 
 ## Deployment (Phase 2+)
 
-- Run the single async process 24/7 on a small VPS or a Raspberry Pi (systemd unit or
-  Docker).
-- Sync the vault between server and laptop with **Git** or **Syncthing**.
-- Keep `.env` and `secrets/` on the host only; they are never committed and never synced
-  into the vault.
+See [DEPLOY.md](DEPLOY.md): systemd service on a VPS / Raspberry Pi, vault sync over git
+(`deploy/vault-sync.sh` + timer) or Syncthing, and how secrets stay off the vault. The bot
+refuses to start if `.env`, `state.db` or a Google secret file resolves inside `VAULT_PATH`.
 
 ## Git & issue workflow
 
