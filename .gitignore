@@ -11,8 +11,5 @@ state.db
 .index/
 .cache/
 
-# Tests
-tests/
-
 # OS
 .DS_Store
