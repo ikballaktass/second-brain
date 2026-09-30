@@ -17,8 +17,6 @@ from .tools.note_writer import NoteWriter
 
 logger = logging.getLogger(__name__)
 
-orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
-
 FALLBACK_REPLY = "Something went wrong. Please try again."
 
 
@@ -26,7 +24,7 @@ def build() -> TelegramGateway:
     llm = LLMClient()
     vault = VaultRepository(Config.secret("VAULT_PATH"))
     tools = [NoteWriter(vault=vault)]
-    orch = Orchestrator(llm=llm, router=None, context=None, tools=tools)
+    orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
 
     async def on_message(chat_id: int, text: str) -> None:
         try:
