@@ -5,6 +5,8 @@ import logging
 import re
 from datetime import datetime
 
+from frontmatter import loads as frontmatter_loads
+
 from ..models import Bookmark, Note
 from ..storage.vault_repository import VaultRepository
 from .base import Tool
@@ -13,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 INBOX_DIR = "00-Gelen"
 BOOKMARKS_DIR = "bookmarks"
+STATE_PATH = "State.md"
 MAX_TITLE_LEN = 80
 _FORBIDDEN = re.compile(r'[<>:"/\\|?*#^\[\]]')
 
@@ -102,6 +105,25 @@ class NoteWriter(Tool):
         self._index(bookmark)
 
         return rel_path
+
+    def update_state(self, fields: dict) -> str:
+        """Merge fields into State.md (created if missing); a None value removes the key.
+
+        Other keys, including ones edited by hand, are kept. State.md is never indexed:
+        it holds the most sensitive data and is useless for semantic search.
+        """
+        if self.vault.exists(STATE_PATH):
+            post = frontmatter_loads(self.vault.read(STATE_PATH))
+            metadata, body = dict(post.metadata), post.content
+        else:
+            metadata, body = {"type": "state"}, ""
+        for key, value in fields.items():
+            if value is None:
+                metadata.pop(key, None)
+            else:
+                metadata[key] = value
+        self.vault.write(STATE_PATH, body, metadata)
+        return STATE_PATH
 
     def _index(self, note: Note) -> None:
         """Upsert into the index if one is configured; failures never undo the save."""
