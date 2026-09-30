@@ -28,6 +28,7 @@ class Note:
 class Bookmark(Note):
     url: str = ""
     summary: str = ""
+    source: str | None = None        # where the link came from, e.g. instagram
 
 
 @dataclass
