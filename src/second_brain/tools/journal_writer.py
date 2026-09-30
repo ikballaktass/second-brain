@@ -7,7 +7,8 @@ Each entry is the user's own words, verbatim, stamped with the time:
 A journal day starts at 04:00, so writing at 01:30 about the evening goes into the
 day that just ended rather than into tomorrow's empty file. Existing frontmatter
 (including metrics the user corrected by hand) is kept on every append; metric
-fields themselves are filled later by JournalAnalyzer (#21).
+fields are filled later by JournalAnalyzer through `annotate`, so the vault still
+has only two writers.
 """
 from __future__ import annotations
 
@@ -90,12 +91,34 @@ class JournalWriter(Tool):
         self._index(day, path, body)
         return path
 
-    def has_entries(self, day: date) -> bool:
-        """True if the day's journal exists and has any text below the frontmatter."""
+    def annotate(self, day: date, fields: dict) -> None:
+        """Merge frontmatter fields into an existing day note (e.g. analyzer metrics).
+
+        Goes through the same lock as `append`, keeps the body untouched, and
+        re-embeds the day. Deciding *which* fields to set is the caller's job.
+        """
+        path = journal_path(day)
+        with self._lock:
+            if not self.vault.exists(path):
+                raise FileNotFoundError(f"no journal for {day.isoformat()}")
+            post = frontmatter.loads(self.vault.read(path))
+            metadata = {**post.metadata, **fields}
+            body = post.content.strip()
+            self.vault.write(path, body, metadata)
+        self._index(day, path, body)
+
+    def read_day(self, day: date) -> tuple[dict, str] | None:
+        """(frontmatter, body) of a day's journal, or None if there is no file."""
         path = journal_path(day)
         if not self.vault.exists(path):
-            return False
-        return bool(frontmatter.loads(self.vault.read(path)).content.strip())
+            return None
+        post = frontmatter.loads(self.vault.read(path))
+        return dict(post.metadata), post.content.strip()
+
+    def has_entries(self, day: date) -> bool:
+        """True if the day's journal exists and has any text below the frontmatter."""
+        found = self.read_day(day)
+        return bool(found and found[1])
 
     def _index(self, day: date, path: str, body: str) -> None:
         """Re-embed the whole day; failures never undo the save."""
