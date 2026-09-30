@@ -44,8 +44,19 @@ Related notes for the LLM, within a budget. Built when `recall` is on.
 - `Context.render()` — `<note path title score>` blocks marked as data, not instructions;
   appended to the orchestrator's system prompt
 - Skips short messages and `/commands`; any failure yields an empty context (never raises)
+- `RelatedNote.created` — frontmatter `created`/`date`, else the file's mtime
 - Not yet: conversation history
 - Depends on: `index_store`, `vault_repository` · Status: **done**
+
+### `orchestration/recall_suggester.py` — `RecallSuggester`
+"Reminds you of" (UC: surface an older related note). Decided in code, not by the LLM.
+- `suggest(context, intent, reply, now) -> str | None` — picks from the `Context` already built
+  for the message (so a note saved in this turn never suggests itself). All must hold: intent
+  `capture`/`journal`; score ≥ 0.55; note ≥ 7 days old; path not already in the reply; same
+  note not suggested in the last 7 days (cooldown in `state_db.meta`, in memory without it)
+- Output: `💡 Bu sana şunu hatırlatıyor: "<title>" — <path> (<3 hafta önce>)`, appended to the
+  reply by the orchestrator; at most one per message; failures never break the reply
+- Depends on: `context_builder`, `state_db` (optional) · Status: **done**
 
 ## tools
 
@@ -98,7 +109,8 @@ The "whether/when to nudge" engine. Conservative by default.
 ### `storage/vault_repository.py` — `VaultRepository`
 Markdown files, the source of truth.
 - `read(rel_path)` (raw Markdown), `write(rel_path, content, frontmatter)`,
-  `upsert_frontmatter(rel_path, fields)`, `list(subdir)` (all `.md`, hidden folders skipped)
+  `upsert_frontmatter(rel_path, fields)`, `list(subdir)` (all `.md`, hidden folders skipped),
+  `modified_at(rel_path)`
 - Status: **done**
 
 ### `storage/index_store.py` — `IndexStore`
