@@ -31,6 +31,8 @@ never go in the vault or in git** — `.env` is gitignored.
 | `TELEGRAM_ALLOWED_CHAT_ID` | Only this chat id may talk to the bot |
 | `VAULT_PATH` | Absolute path to the Obsidian vault |
 | `GOOGLE_CREDENTIALS_PATH` | OAuth client secret file (Phase 2) |
+| `GOOGLE_TOKEN_PATH` | OAuth token written by `scripts/google_auth.py` (default `secrets/google_token.json`) |
+| `GOOGLE_CALENDAR_ID` | Calendar to read (default `primary`) |
 | `QUIET_HOURS` | e.g. `23:00-08:00`; Policy never nudges in this window (default `23:00-08:00`) |
 | `POLICY_MAX_NUDGES_PER_DAY` | Daily cap on assistant-initiated nudges (default `3`); user reminders are exempt |
 | `TIMEZONE` | e.g. `Europe/Istanbul` |
@@ -39,6 +41,22 @@ never go in the vault or in git** — `.env` is gitignored.
 
 Feature switches live in code: `Config.manifest`. A module set to `False` is fully off
 (fail-closed) — not partially active.
+
+## Google Calendar (optional)
+
+The calendar module is **off** by default (`Config.manifest["calendar"] = False`). To turn it on:
+
+1. In Google Cloud Console: create a project, enable the **Google Calendar API**, configure the
+   OAuth consent screen (add yourself as a test user), and create an OAuth client of type
+   **Desktop app**. Download its JSON to `secrets/google_credentials.json`.
+2. On a machine with a browser run `PYTHONPATH=src python scripts/google_auth.py`. It asks only
+   for **read-only** calendar access and writes `secrets/google_token.json` (mode 0600).
+   Headless: `--no-browser --port 8765` and forward the port with `ssh -L 8765:localhost:8765`.
+3. Set `"calendar": True` in `Config.manifest`. With the flag on, a missing or unusable token
+   stops the bot at startup with a message saying what to do.
+
+Once on, the LLM can list a day's events, and Policy holds reminders back until the current
+(timed, busy) event ends. `secrets/` is gitignored and must stay outside the vault.
 
 ## Coding conventions
 
