@@ -28,6 +28,14 @@ Core decision center. Holds the tool registry and drives tool-calling.
 - `_call_tool(name, args)`
 - Depends on: `router`, `context_builder`, `llm_client`, `tools` · Status: **stub**
 
+### `orchestration/reminder_dispatcher.py` — `ReminderDispatcher`
+The proactive send path for reminders; the scheduler's `on_due` handler.
+- `await dispatcher(due)` — `policy.decide(now, "reminder")`; allowed → one templated message
+  (`⏰ Hatırlatma: …`, no LLM), each reminder `sent`, `record_nudge`; not allowed → each
+  deferred to `retry_at` (fallback +30 min); send failure → deferred +5 min
+- `send` is injected (interface sits above orchestration)
+- Depends on: `reminder_manager`, `policy` · Status: **done**
+
 ### `orchestration/context_builder.py` — `ContextBuilder`
 - `build(message) -> dict` — history + related notes (retriever) + current state; manages
   the token budget
@@ -61,8 +69,8 @@ gateway's `on_startup` / `on_shutdown` hooks (only when `proactive` is on).
   recorded in `state_db.jobs` with `last_run` after each run
 - `start()` / `shutdown()` — `start` registers the reminder tick (runs once immediately)
 - `on_due` contract: must move each reminder to `sent` or `deferred`, or it is handed over again
-- Policy and sending live in the injected `on_due` (#16): this layer never imports
-  orchestration or interface.
+- Policy and sending live in the injected `on_due` (`ReminderDispatcher`): this layer
+  never imports orchestration or interface.
 - Depends on: `state_db` (+ injected `on_due`) · Status: **done**
 
 ### `proactive/policy.py` — `Policy`

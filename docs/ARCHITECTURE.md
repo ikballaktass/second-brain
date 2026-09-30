@@ -64,6 +64,19 @@ scheduler.tick()  (every N seconds, inside the same async process)
         → if YES → orchestrator composes the message → telegram_gateway.send(...)
 ```
 
+For reminders this is implemented by `orchestration/reminder_dispatcher.py`, injected as the
+scheduler's `on_due` handler:
+
+```
+scheduler.tick() → state_db.reminders_due()
+   → ReminderDispatcher(due)
+        → policy.decide(now, "reminder")
+             → not now → reminder_manager.defer(id, retry_at)        (status: deferred)
+             → ok      → gateway.send_message("⏰ Hatırlatma: ...")    (one message per tick)
+                       → reminder_manager.mark_sent(id)              (status: sent)
+                       → policy.record_nudge(now, "reminder")
+```
+
 The `policy` layer exists so proactivity never becomes spam. Treat "should we message the
 user right now?" as a first-class decision with its own rules, not an afterthought.
 
