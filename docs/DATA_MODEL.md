@@ -97,8 +97,12 @@ updated: 2026-09-18
 
 A flag with an end date switches itself off after that date; without one (e.g. edited by
 hand) it stays until changed. Effects, for assistant-initiated `nudge`s only (reminders the
-user set are never held back): exam week → none; low energy → at most 1 a day; high energy and
-cycle phase → no change.
+user set are never held back): exam week → none; low energy → at most 1 a day; cycle phase →
+no change. High energy doesn't loosen any limit, but enables one topic suggestion a day
+(`EnergySuggester`, 10:00–22:00).
+
+Notes can mark themselves as demanding for that suggestion with `effort: high` (or
+`difficulty: high`) in frontmatter, or a `zor` / `efor` tag.
 
 ## `state_db` (SQLite) schema
 

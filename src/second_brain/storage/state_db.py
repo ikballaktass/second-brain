@@ -22,7 +22,7 @@ SCHEMA_VERSION = 1
 REMINDER_STATUSES = ("pending", "deferred", "sent", "closed")
 ACTIVE_STATUSES = ("pending", "deferred")
 MESSAGE_ROLES = ("user", "assistant")
-JOB_KINDS = ("reminder", "journal_check", "morning_brief", "analyze")
+JOB_KINDS = ("reminder", "journal_check", "morning_brief", "analyze", "energy_suggestion")
 LAST_NUDGE_KEY = "last_nudge_ts"
 
 _SCHEMA = f"""

@@ -36,6 +36,21 @@ The proactive send path for reminders; the scheduler's `on_due` handler.
 - `send` is injected (interface sits above orchestration)
 - Depends on: `reminder_manager`, `policy` · Status: **done**
 
+### `orchestration/energy_suggester.py` — `EnergySuggester`
+High-energy topic suggestion; the scheduler's `energy_suggestion` job (every 30 min).
+- Sends at most one message a day, 10:00–22:00, while `energy: high` is active and
+  `policy.decide(now, "nudge")` allows it (counts toward the daily limit; exam week wins)
+- Topic = a note edited in the last 30 days (not README.md, State.md, `journal/`,
+  `bookmarks/`) meeting ≥ 1 criterion, judged only from the vault:
+  **effort** (`effort`/`difficulty: high`, `zor`/`efor` tag, or ≥ 5 open tasks),
+  **near_done** (≥ 3 tasks, ≥ 60 % checked, one still open),
+  **frequent** (≥ 3 other notes/journal entries from the last 14 days at ≥ 0.55 similarity;
+  needs the index). More criteria first; ties: effort > near_done > frequent > most recent
+- Same note not again within 7 days; no qualifying note → no message
+- Fixed template per reason, `USER_NAME` optional, path always cited
+- Depends on: `vault_repository`, `index_store` (optional), `policy`, `state_db`,
+  injected `StateManager.current` · Status: **done**
+
 ### `orchestration/journal_nudger.py` — `JournalNudger`
 Evening "you haven't journaled today" nudge; the scheduler's `journal_check` job (every 30 min).
 - Sends `📓 Bugün günlüğüne henüz bir şey yazmadın. Günün nasıl geçti?` (fixed template) at most

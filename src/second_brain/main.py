@@ -14,6 +14,7 @@ from .config import Config, assert_outside_vault
 from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.context_builder import ContextBuilder
+from .orchestration.energy_suggester import EnergySuggester
 from .orchestration.journal_nudger import JournalNudger
 from .orchestration.orchestrator import Orchestrator
 from .orchestration.recall_suggester import RecallSuggester
@@ -82,6 +83,10 @@ def build() -> TelegramGateway:
             on_due=ReminderDispatcher(reminders=reminders, policy=policy, send=send),
             interval_s=interval,
         )
+        suggester = EnergySuggester.from_config(
+            vault, index, policy, state, state_manager.current, send
+        )
+        scheduler.add_job("energy_suggestion", suggester, IntervalTrigger(minutes=30))
         if journal is not None:
             nudger = JournalNudger.from_config(journal, policy, state, send)
             scheduler.add_job("journal_check", nudger, IntervalTrigger(minutes=30))
