@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .config import Config, assert_outside_vault
@@ -24,6 +25,7 @@ from .storage.index_store import DEFAULT_INDEX_PATH, IndexStore
 from .storage.state_db import StateDB
 from .storage.vault_repository import VaultRepository
 from .tools.calendar import CalendarTool
+from .tools.journal_analyzer import JournalAnalyzer
 from .tools.journal_writer import JournalWriter
 from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
@@ -78,6 +80,9 @@ def build() -> TelegramGateway:
         if journal is not None:
             nudger = JournalNudger.from_config(journal, policy, state, send)
             scheduler.add_job("journal_check", nudger, IntervalTrigger(minutes=30))
+            # Right after the 04:00 day boundary; run_now catches up days missed while down.
+            analyzer = JournalAnalyzer(llm=llm, journal=journal, state=state)
+            scheduler.add_job("analyze", analyzer, CronTrigger(hour=4, minute=30), run_now=True)
     context = ContextBuilder.from_config(index, vault) if index is not None else None
     # Cooldowns persist in state_db when it exists (proactive on), else in memory.
     suggester = RecallSuggester(state=state) if index is not None else None
