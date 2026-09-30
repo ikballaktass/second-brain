@@ -52,6 +52,7 @@ class Reminder:
     due: datetime
     status: str = "pending"          # pending | deferred | sent | closed
     note_path: str | None = None
+    id: int | None = None            # state_db row id
 
 
 @dataclass
