@@ -54,9 +54,16 @@ user intent. It must fill the fixed metric schema only and never invent new metr
 ## proactive
 
 ### `proactive/scheduler.py` — `Scheduler`
-- `tick()` — one loop pass (called by APScheduler)
-- `add_job(job)`
-- Depends on: `policy`, `orchestrator`, `state_db`, `journal_analyzer` · Status: **stub**
+APScheduler `AsyncIOScheduler` inside the bot's event loop, started/stopped by the
+gateway's `on_startup` / `on_shutdown` hooks (only when `proactive` is on).
+- `async tick(now)` — fetch due reminders from `state_db`, hand them to `on_due`; never raises
+- `add_job(kind, func, trigger, run_now)` — one job per kind (`max_instances=1`, `coalesce`),
+  recorded in `state_db.jobs` with `last_run` after each run
+- `start()` / `shutdown()` — `start` registers the reminder tick (runs once immediately)
+- `on_due` contract: must move each reminder to `sent` or `deferred`, or it is handed over again
+- Policy and sending live in the injected `on_due` (#16): this layer never imports
+  orchestration or interface.
+- Depends on: `state_db` (+ injected `on_due`) · Status: **done**
 
 ### `proactive/policy.py` — `Policy`
 The "whether/when to nudge" engine. Conservative by default.
