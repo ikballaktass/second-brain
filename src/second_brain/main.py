@@ -11,7 +11,9 @@ from .config import Config
 from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.orchestrator import Orchestrator
+from .orchestration.reminder_dispatcher import ReminderDispatcher
 from .orchestration.router import Router
+from .proactive.policy import Policy
 from .proactive.scheduler import DEFAULT_INTERVAL_S, Scheduler
 from .storage.index_store import IndexStore
 from .storage.state_db import StateDB
@@ -32,14 +34,24 @@ def build() -> TelegramGateway:
     index = IndexStore(llm) if Config.enabled("recall") else None
     note_writer = NoteWriter(vault=vault, index=index)
     tools = [note_writer, LinkCapturer(llm=llm, note_writer=note_writer)]
-    # Fail-closed: reminders are only offered once something can actually send them.
+    # Fail-closed: reminders, scheduler and send path switch on and off together.
     scheduler = None
     if Config.enabled("proactive"):
         state = StateDB(Config.get("STATE_DB_PATH", "state.db"))
-        tools.append(ReminderManager(state=state))
+        reminders = ReminderManager(state=state)
+        tools.append(reminders)
+        # busy_until (calendar) is added once CalendarTool exists (#11).
+        policy = Policy.from_config(state)
+
+        async def send(text: str) -> None:
+            await gateway.send_message(text)
+
         interval = float(Config.get("SCHEDULER_INTERVAL_S", str(DEFAULT_INTERVAL_S)))
-        # on_due (policy check + send) is wired in #16.
-        scheduler = Scheduler(state=state, interval_s=interval)
+        scheduler = Scheduler(
+            state=state,
+            on_due=ReminderDispatcher(reminders=reminders, policy=policy, send=send),
+            interval_s=interval,
+        )
     orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
 
     async def on_message(chat_id: int, text: str) -> None:
