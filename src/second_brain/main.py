@@ -10,6 +10,7 @@ import logging
 from .config import Config, assert_outside_vault
 from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
+from .orchestration.context_builder import ContextBuilder
 from .orchestration.orchestrator import Orchestrator
 from .orchestration.reminder_dispatcher import ReminderDispatcher
 from .orchestration.router import Router
@@ -65,7 +66,8 @@ def build() -> TelegramGateway:
             on_due=ReminderDispatcher(reminders=reminders, policy=policy, send=send),
             interval_s=interval,
         )
-    orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
+    context = ContextBuilder.from_config(index, vault) if index is not None else None
+    orch = Orchestrator(llm=llm, router=Router(llm), context=context, tools=tools)
 
     async def on_message(chat_id: int, text: str) -> None:
         try:

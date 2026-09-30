@@ -37,9 +37,15 @@ The proactive send path for reminders; the scheduler's `on_due` handler.
 - Depends on: `reminder_manager`, `policy` · Status: **done**
 
 ### `orchestration/context_builder.py` — `ContextBuilder`
-- `build(message) -> dict` — history + related notes (retriever) + current state; manages
-  the token budget
-- Depends on: `state_db`, `retriever` (Phase 4) · Status: **stub**
+Related notes for the LLM, within a budget. Built when `recall` is on.
+- `build(message) -> Context` — `index.search` (k=3) → drop scores below `RECALL_MIN_SCORE`
+  (default 0.42) → read each note from the **vault** (frontmatter dropped; bookmark summary/url
+  kept) → ≤ 1200 chars per note, ≤ 4000 chars total (no scraps under 200) → `Context.related`
+- `Context.render()` — `<note path title score>` blocks marked as data, not instructions;
+  appended to the orchestrator's system prompt
+- Skips short messages and `/commands`; any failure yields an empty context (never raises)
+- Not yet: conversation history
+- Depends on: `index_store`, `vault_repository` · Status: **done**
 
 ## tools
 

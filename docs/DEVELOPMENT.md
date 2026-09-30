@@ -39,6 +39,7 @@ never go in the vault or in git** — `.env` is gitignored.
 | `STATE_DB_PATH` | SQLite file for operational state (default `state.db`) |
 | `INDEX_PATH` | Derived embedding index (default `.index`, must be outside the vault) |
 | `EMBEDDING_MODEL` | sentence-transformers model (default multilingual MiniLM) |
+| `RECALL_MIN_SCORE` | Similarity (0–1) a note needs to be added to the LLM context (default `0.42`) |
 | `SCHEDULER_INTERVAL_S` | Seconds between proactive ticks (default `60`) |
 
 Feature switches live in code: `Config.manifest`. A module set to `False` is fully off
@@ -71,6 +72,10 @@ embeddings are computed locally with `sentence-transformers`. On a new machine:
    The first run downloads the model (~470 MB, into `HF_HOME`, default `~/.cache/huggingface`).
 3. New notes and bookmarks are indexed on save, and the LLM gets the `retriever` tool. To turn
    recall off, set `"recall": False` in `Config.manifest`.
+
+Each message then gets up to 3 related notes (≤ 4000 characters, ~1000–1500 tokens) in the
+system prompt. If unrelated notes show up for small talk, raise `RECALL_MIN_SCORE`; if relevant
+notes are missed, lower it.
 
 Re-run the script whenever notes were edited outside the bot (e.g. in Obsidian) or after
 changing `EMBEDDING_MODEL`. Tests use a fake embedder; `RUN_MODEL_TESTS=1 pytest` also runs

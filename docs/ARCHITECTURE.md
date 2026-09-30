@@ -45,7 +45,7 @@ What happens when the user sends a message (see Sequence 1 & 3 in the design doc
 Telegram → telegram_gateway._on_message   (auth-check the chat id)
         → orchestrator.handle(message)
         → router.classify(message)         → Intent
-        → context_builder.build(message)   (history + related notes + state)
+        → context_builder.build(message)   (related notes from the vault, within a budget)
         → orchestrator picks tool(s) via LLM tool-calling
         → tool.run(args)                   (e.g. note_writer → vault_repository.write)
         → orchestrator composes reply
