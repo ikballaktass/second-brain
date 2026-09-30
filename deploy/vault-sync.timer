@@ -1,0 +1,12 @@
+# Sync the vault every 10 minutes (first run 2 minutes after boot).
+
+[Unit]
+Description=Run Second Brain vault sync every 10 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+RandomizedDelaySec=30s
+
+[Install]
+WantedBy=timers.target

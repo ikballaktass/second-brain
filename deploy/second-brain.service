@@ -1,0 +1,34 @@
+# Second Brain — Telegram assistant, always on.
+# Install: see docs/DEPLOY.md. Paths assume the repo at /opt/second-brain and the
+# vault at /srv/vault; edit them (and ReadWritePaths) if yours differ.
+#
+# Configuration is read from /opt/second-brain/.env by the app itself (python-dotenv).
+# There is deliberately no EnvironmentFile=: systemd does not understand the inline
+# "# comments" that .env.example uses and would put them into the values.
+
+[Unit]
+Description=Second Brain Telegram assistant
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=secondbrain
+Group=secondbrain
+WorkingDirectory=/opt/second-brain
+Environment=PYTHONPATH=/opt/second-brain/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/second-brain/.venv/bin/python -m second_brain.main
+Restart=on-failure
+RestartSec=10
+
+# Hardening: read-only system, private /tmp, no access to /home, new files are 0600.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+UMask=0077
+ReadWritePaths=/opt/second-brain /srv/vault
+
+[Install]
+WantedBy=multi-user.target
