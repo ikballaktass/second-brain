@@ -11,10 +11,13 @@ from .config import Config
 from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.orchestrator import Orchestrator
+from .orchestration.router import Router
 from .storage.vault_repository import VaultRepository
 from .tools.note_writer import NoteWriter
 
 logger = logging.getLogger(__name__)
+
+orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
 
 FALLBACK_REPLY = "Something went wrong. Please try again."
 

@@ -28,6 +28,11 @@ class Orchestrator:
 
     def handle(self, message: str) -> str:
         """Classify -> build context -> call tool(s) -> compose a reply."""
+        if self.router is not None:
+            intent = self.router.classify(message)
+            logger.info("Intent: %s", intent.value)
+            # TODO(phase-1+): branch on intent (e.g. JOURNAL -> journal_writer).
+
         api_tools = [t.to_api() for t in self.tools.values()]
 
         result = self.llm.complete(message, tools=api_tools, system=SYSTEM_PROMPT)

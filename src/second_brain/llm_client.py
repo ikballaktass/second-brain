@@ -29,11 +29,17 @@ class LLMClient:
 
     def complete(
         self,
-        prompt: str, 
+        prompt: str,
         tools: list | None = None,
-        system: str | None = None
-        ) -> LLMResult:
-        """Call the model, optionally with tool definitions (tool-calling)."""
+        system: str | None = None,
+        model: str | None = None,
+        max_tokens: int = 1024,
+    ) -> LLMResult:
+        """Call the model, optionally with tool definitions (tool-calling).
+
+        `model` and `max_tokens` let callers (e.g. the Router) use a cheaper
+        model or a tighter output budget than the default.
+        """
         kwargs = {}
         if tools:
             kwargs["tools"] = tools
@@ -42,8 +48,8 @@ class LLMClient:
 
         try:
             response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1024,
+                model=model or self.model,
+                max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
                 **kwargs,
             )

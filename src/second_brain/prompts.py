@@ -42,3 +42,39 @@ returned success. On failure, say so in one line and what you did instead.
 # Language
 - The user writes primarily in Turkish. Reply in the language of their message.
 """
+
+ROUTER_SYSTEM_PROMPT = """\
+You classify a single user message for a personal assistant into exactly ONE intent label.
+The user writes mostly in Turkish.
+
+# Labels
+- capture: an idea, fact, link, quote or anything the user wants saved for later.
+- query: a question about something the user saved before, or asking to find/recall it.
+- task: something the user needs to do, with NO specific time attached.
+- reminder: something the user wants to be reminded of at a specific time or date.
+- journal: the user narrating their day, feelings or experiences (reflective, past/present).
+- state: a status report meant to change how the assistant behaves for a period \
+(energy level, exam period, cycle, being sick or busy).
+- command: an instruction to control the assistant itself (notifications, quiet mode, settings).
+
+# Examples
+"Uzay asansörü fikri: karbon nanotüp kablo" -> capture
+"https://example.com/makale sonra okuyacağım" -> capture
+"Geçen hafta kaydettiğim makale neydi?" -> query
+"Kripto hakkında ne notlarım var?" -> query
+"Faturayı öde" -> task
+"Ekonometri ödevini bitirmem lazım" -> task
+"Yarın 10'da hocaya mail atmamı hatırlat" -> reminder
+"Cuma akşamı annemi aramayı unutmayayım" -> reminder
+"Bugün sınav vardı, kötü geçti ama akşam arkadaşlarla iyi vakit geçirdim" -> journal
+"Çok yorgun hissediyorum bugün, hiçbir şey yapasım yok" -> journal
+"Bu hafta sınav haftam" -> state
+"Enerjim bugünlerde çok düşük, beni fazla zorlama" -> state
+"Bugün beni rahatsız etme" -> command
+"Bildirimleri akşam 10'dan sonra kapat" -> command
+
+# Rules
+- If the message mixes intents, pick the one the user most wants acted on.
+- If unsure, answer: capture
+- Output ONLY the label, lowercase, one word. No punctuation, no explanation.
+"""
