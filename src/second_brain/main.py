@@ -12,7 +12,9 @@ from .interface.telegram_gateway import TelegramGateway
 from .llm_client import LLMClient
 from .orchestration.orchestrator import Orchestrator
 from .orchestration.router import Router
+from .storage.index_store import IndexStore
 from .storage.vault_repository import VaultRepository
+from .tools.link_capturer import LinkCapturer
 from .tools.note_writer import NoteWriter
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,10 @@ FALLBACK_REPLY = "Something went wrong. Please try again."
 def build() -> TelegramGateway:
     llm = LLMClient()
     vault = VaultRepository(Config.secret("VAULT_PATH"))
-    tools = [NoteWriter(vault=vault)]
+    # Fail-closed: the index is wired only when the recall module is switched on.
+    index = IndexStore(llm) if Config.enabled("recall") else None
+    note_writer = NoteWriter(vault=vault, index=index)
+    tools = [note_writer, LinkCapturer(llm=llm, note_writer=note_writer)]
     orch = Orchestrator(llm=llm, router=Router(llm), context=None, tools=tools)
 
     async def on_message(chat_id: int, text: str) -> None:
