@@ -66,8 +66,14 @@ exam_week: false
 people: ["[[Ali]]"]
 events: swing class
 ---
-Free text: what happened, feelings, events, people.
+**14:05** — Free text in the user's own words: what happened, feelings, events, people.
+
+**21:40** — Each entry is appended verbatim by JournalWriter with its time.
 ```
+
+`JournalWriter` creates the file with only `type` and `date`; metric fields appear once
+`JournalAnalyzer` (#21) fills them, and hand edits are preserved on every append. A journal
+day runs from **04:00 to 04:00**, so an entry written at 01:30 belongs to the previous date.
 
 ### State flags (`State.md`)
 The most sensitive data (energy/cycle/exam). Kept in plain Markdown, **under user control**,

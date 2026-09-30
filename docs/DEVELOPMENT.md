@@ -34,6 +34,7 @@ never go in the vault or in git** — `.env` is gitignored.
 | `GOOGLE_TOKEN_PATH` | OAuth token written by `scripts/google_auth.py` (default `secrets/google_token.json`) |
 | `GOOGLE_CALENDAR_ID` | Calendar to read (default `primary`) |
 | `QUIET_HOURS` | e.g. `23:00-08:00`; Policy never nudges in this window (default `23:00-08:00`) |
+| `JOURNAL_CHECK_TIME` | After this time an empty journal gets one evening nudge (default `21:00`) |
 | `POLICY_MAX_NUDGES_PER_DAY` | Daily cap on assistant-initiated nudges (default `3`); user reminders are exempt |
 | `TIMEZONE` | e.g. `Europe/Istanbul` |
 | `STATE_DB_PATH` | SQLite file for operational state (default `state.db`) |

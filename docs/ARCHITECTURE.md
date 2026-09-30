@@ -65,6 +65,9 @@ scheduler.tick()  (every N seconds, inside the same async process)
         → if YES → orchestrator composes the message → telegram_gateway.send(...)
 ```
 
+The empty-journal check is `orchestration/journal_nudger.py` (job `journal_check`, every 30
+minutes after `JOURNAL_CHECK_TIME`, at most once a day, `kind="nudge"`).
+
 For reminders this is implemented by `orchestration/reminder_dispatcher.py`, injected as the
 scheduler's `on_due` handler:
 

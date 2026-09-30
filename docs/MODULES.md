@@ -36,6 +36,17 @@ The proactive send path for reminders; the scheduler's `on_due` handler.
 - `send` is injected (interface sits above orchestration)
 - Depends on: `reminder_manager`, `policy` · Status: **done**
 
+### `orchestration/journal_nudger.py` — `JournalNudger`
+Evening "you haven't journaled today" nudge; the scheduler's `journal_check` job (every 30 min).
+- Sends `📓 Bugün günlüğüne henüz bir şey yazmadın. Günün nasıl geçti?` (fixed template) at most
+  once per journal day, when: past `JOURNAL_CHECK_TIME` (default 21:00), the day's journal is
+  empty, and `policy.decide(now, "nudge")` allows it
+- Policy "not now" → retried on the next run; quiet hours end the day's chances; send failure →
+  retried. After sending: `record_nudge(kind="nudge")` (counts toward the daily limit) and
+  `journal_nudged:<date>` in `state_db.meta`
+- Registered when both `journal` and `proactive` are on
+- Depends on: `journal_writer`, `policy`, `state_db` · Status: **done**
+
 ### `orchestration/context_builder.py` — `ContextBuilder`
 Related notes for the LLM, within a budget. Built when `recall` is on.
 - `build(message) -> Context` — `index.search` (k=3) → drop scores below `RECALL_MIN_SCORE`
@@ -70,7 +81,7 @@ All tools implement `tools/base.py` → `Tool` (`name`, `run(args)`).
 | `task_manager.py` | `TaskManager` | Tasks with priority | 3 | stub |
 | `calendar.py` | `CalendarTool` | Google Calendar read-only: `list` a day's events (LLM) and `busy_until(t)` for Policy; 5-min cache; off until OAuth is set up | 2 | done |
 | `retriever.py` | `Retriever` | Semantic search over the vault (`query`, `k` ≤ 10) → `path · score · snippet`; registered when `recall` is on (default) | 4 | done |
-| `journal_writer.py` | `JournalWriter` | Open/append today's journal note | 5 | stub |
+| `journal_writer.py` | `JournalWriter` | Append the user's words verbatim (`**HH:MM** — …`) to `journal/YYYY-MM-DD.md` (day starts 04:00); keeps frontmatter; re-indexes the day as `journal`; `has_entries(day)` | 5 | done |
 | `journal_analyzer.py` | `JournalAnalyzer` | End-of-day metric extraction (fixed schema) | 5 | stub |
 
 `JournalAnalyzer` is intentionally **not** a `Tool` — it is driven by the scheduler, not by
