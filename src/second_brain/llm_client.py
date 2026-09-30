@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import anthropic
 from .config import Config
+from .embeddings import Embedder, Kind
 
 
 @dataclass
@@ -26,6 +27,8 @@ class LLMClient:
     def __init__(self) -> None:
         self.client = anthropic.Anthropic(api_key=Config.secret("ANTHROPIC_API_KEY"))
         self.model = Config.get("LLM_MODEL", "claude-haiku-4-5-20251001")
+        # Anthropic has no embeddings API; vectors come from a local model (lazy-loaded).
+        self.embedder = Embedder.from_config()
 
     def complete(
         self,
@@ -72,6 +75,6 @@ class LLMClient:
         ]
         return LLMResult(text=text, tool_calls=tool_calls)
 
-    def embed(self, text: str) -> list[float]:
-        """Return an embedding vector for semantic recall (Phase 4)."""
-        raise NotImplementedError
+    def embed(self, texts: list[str], kind: Kind = "document") -> list[list[float]]:
+        """Embedding vectors for semantic recall, computed locally (see embeddings.py)."""
+        return self.embedder.embed(texts, kind)

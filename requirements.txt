@@ -8,3 +8,6 @@ APScheduler>=3.10
 chromadb>=0.5
 google-api-python-client>=2.140
 google-auth-oauthlib>=1.2
+# Local embeddings for semantic recall (Phase 4). On machines without a GPU install
+# the CPU build of torch first: pip install torch --index-url https://download.pytorch.org/whl/cpu
+sentence-transformers>=3
