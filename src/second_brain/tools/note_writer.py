@@ -5,7 +5,7 @@ import logging
 import re
 from datetime import datetime
 
-from ..models import Bookmark
+from ..models import Bookmark, Note
 from ..storage.vault_repository import VaultRepository
 from .base import Tool
 
@@ -74,14 +74,14 @@ class NoteWriter(Tool):
         }
 
         self.vault.write(rel_path, content, frontmatter)
+        self._index(Note(title=safe_title, content=content, path=rel_path, created=now))
 
         return rel_path
 
     def save_bookmark(self, bookmark: Bookmark) -> str:
         """Write a bookmark note (DATA_MODEL shape) and return its vault-relative path.
 
-        Also upserts it into the index when one is configured. An index failure is
-        logged, not raised: the vault is the source of truth and the index is rebuildable.
+        Also upserts it into the index when one is configured (see `_index`).
         """
         if not bookmark.url.strip():
             raise ValueError("bookmark url is empty")
@@ -99,14 +99,18 @@ class NoteWriter(Tool):
 
         self.vault.write(rel_path, bookmark.content, frontmatter)
         bookmark.path = rel_path
-
-        if self.index is not None:
-            try:
-                self.index.upsert(bookmark)
-            except Exception:
-                logger.warning("Index upsert failed for %s", rel_path, exc_info=True)
+        self._index(bookmark)
 
         return rel_path
+
+    def _index(self, note: Note) -> None:
+        """Upsert into the index if one is configured; failures never undo the save."""
+        if self.index is None:
+            return
+        try:
+            self.index.upsert(note)
+        except Exception:
+            logger.warning("Index upsert failed for %s", note.path, exc_info=True)
 
     def _unique_path(self, folder: str, stem: str) -> str:
         """Return f"{folder}/{stem}.md", adding -2, -3, ... if taken."""
