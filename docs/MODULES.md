@@ -67,9 +67,17 @@ gateway's `on_startup` / `on_shutdown` hooks (only when `proactive` is on).
 
 ### `proactive/policy.py` — `Policy`
 The "whether/when to nudge" engine. Conservative by default.
-- `should_notify(ctx) -> bool` — quiet hours, calendar busyness, state flags, rate limit
-- `next_window()` — when to try again
-- Status: **stub**
+- `decide(now, kind) -> Decision(allowed, reason, retry_at)` — the single decision point.
+  Rules in order: quiet hours (`QUIET_HOURS`) → calendar busy (injected `busy_until(t)`,
+  off until #11) → daily limit (`POLICY_MAX_NUDGES_PER_DAY`, `nudge` only)
+- `kind`: `reminder` (user asked for it; never dropped by the daily limit) or `nudge`
+  (assistant-initiated)
+- `should_notify(ctx) -> bool`, `next_window(now, kind)` — wrappers over the same rules
+- `record_nudge(now, kind)` — call after sending; updates `last_nudge` and the daily count
+  (`meta` table in `state_db`)
+- A failing calendar check counts as "free"; malformed config raises at startup
+- State flags (#22) are not wired yet
+- Depends on: `state_db`, `config` (+ injected `busy_until`) · Status: **done**
 
 ## storage
 
