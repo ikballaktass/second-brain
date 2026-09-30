@@ -8,6 +8,8 @@ Rules, in order:
    injected `busy_until(t)` callable (CalendarTool, #11); without it the rule is off.
 3. Daily rate limit (`POLICY_MAX_NUDGES_PER_DAY`, default 3) — only for `nudge`
    (assistant-initiated). A `reminder` the user asked for is never dropped by quota.
+4. State flags from State.md (injected `state_flags()`, #22) — also `nudge` only:
+   exam week → no nudges; low energy → at most 1 a day; high energy changes nothing.
 
 `decide()` is the single decision point; `should_notify()` / `next_window()` wrap it.
 Datetimes are naive local time, like the rest of the project.
@@ -17,10 +19,11 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Callable
 
 from ..config import Config
+from ..models import StateFlags
 from ..storage.state_db import StateDB
 
 logger = logging.getLogger(__name__)
@@ -28,11 +31,13 @@ logger = logging.getLogger(__name__)
 KINDS = ("reminder", "nudge")
 DEFAULT_QUIET_HOURS = "23:00-08:00"
 DEFAULT_MAX_NUDGES_PER_DAY = 3
-MAX_WINDOW_STEPS = 50
+MAX_WINDOW_STEPS = 100   # a month-long exam period is ~2 steps a day
+LOW_ENERGY_NUDGES_PER_DAY = 1
 COUNT_DATE_KEY = "nudge_count_date"
 COUNT_KEY = "nudge_count"
 
 BusyUntil = Callable[[datetime], "datetime | None"]
+FlagsReader = Callable[[], StateFlags]
 _HHMM = re.compile(r"^\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*$")
 
 
@@ -72,7 +77,7 @@ class QuietHours:
 @dataclass(frozen=True)
 class Decision:
     allowed: bool
-    reason: str                      # ok | quiet_hours | calendar_busy | rate_limit
+    reason: str                      # ok | quiet_hours | calendar_busy | rate_limit | state_flags
     retry_at: datetime | None = None  # when not allowed: next suitable time, if any
 
 
@@ -83,6 +88,7 @@ class Policy:
         quiet_hours: str = DEFAULT_QUIET_HOURS,
         max_nudges_per_day: int = DEFAULT_MAX_NUDGES_PER_DAY,
         busy_until: BusyUntil | None = None,
+        state_flags: FlagsReader | None = None,
     ) -> None:
         if max_nudges_per_day < 0:
             raise ValueError("max_nudges_per_day cannot be negative")
@@ -90,9 +96,15 @@ class Policy:
         self.quiet = QuietHours.parse(quiet_hours)
         self.max_nudges_per_day = max_nudges_per_day
         self.busy_until = busy_until
+        self.state_flags = state_flags
 
     @classmethod
-    def from_config(cls, state: StateDB, busy_until: BusyUntil | None = None) -> Policy:
+    def from_config(
+        cls,
+        state: StateDB,
+        busy_until: BusyUntil | None = None,
+        state_flags: FlagsReader | None = None,
+    ) -> Policy:
         """Build from env; a malformed value fails loudly at startup."""
         raw_max = Config.get("POLICY_MAX_NUDGES_PER_DAY", str(DEFAULT_MAX_NUDGES_PER_DAY))
         try:
@@ -104,6 +116,7 @@ class Policy:
             quiet_hours=Config.get("QUIET_HOURS", DEFAULT_QUIET_HOURS),
             max_nudges_per_day=max_nudges,
             busy_until=busy_until,
+            state_flags=state_flags,
         )
 
     # --- decisions -----------------------------------------------------------------------
@@ -134,7 +147,7 @@ class Policy:
             if busy_end is not None:
                 t = busy_end
                 continue
-            if kind == "nudge" and self._count_on(t) >= self.max_nudges_per_day:
+            if kind == "nudge" and self._count_on(t) >= self._nudge_limit(t.date()):
                 t = datetime.combine(t.date() + timedelta(days=1), time.min)
                 continue
             return t
@@ -147,9 +160,32 @@ class Policy:
             return "quiet_hours"
         if self._busy_end(now) is not None:
             return "calendar_busy"
-        if kind == "nudge" and self._count_on(now) >= self.max_nudges_per_day:
-            return "rate_limit"
+        if kind == "nudge":
+            count = self._count_on(now)
+            if count >= self.max_nudges_per_day:
+                return "rate_limit"
+            if count >= self._nudge_limit(now.date()):
+                return "state_flags"
         return None
+
+    def _nudge_limit(self, day: date) -> int:
+        """Daily nudge cap for `day` after applying the user's state flags."""
+        flags = self._flags()
+        if flags.exam_on(day):
+            return 0
+        if flags.energy_on(day) == "low":
+            return min(self.max_nudges_per_day, LOW_ENERGY_NUDGES_PER_DAY)
+        return self.max_nudges_per_day
+
+    def _flags(self) -> StateFlags:
+        if self.state_flags is None:
+            return StateFlags()
+        try:
+            return self.state_flags()
+        except Exception:
+            # Unreadable State.md must not block everything; values are never logged.
+            logger.warning("Could not read state flags; using defaults", exc_info=True)
+            return StateFlags()
 
     def _busy_end(self, t: datetime) -> datetime | None:
         """End of the calendar event covering `t`, or None when free / unknown."""
